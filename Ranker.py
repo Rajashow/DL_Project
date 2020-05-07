@@ -2,7 +2,7 @@ import torch
 import torch.functional
 
 
-def nsga_sort(obj_vals, return_fronts):
+def nsga_sort(obj_vals, return_fronts=False):
     """
     Returns ranking of objective values based on non-dominated sorting.
     Optionally returns fronts (useful for visualization).
@@ -19,8 +19,6 @@ def nsga_sort(obj_vals, return_fronts):
             int([nIndividuals X 1])
     front   - (np_array) - Pareto front of each individual
             int([nIndividuals X 1])
-
-
     """
     fronts = get_Fronts(obj_vals)
 
@@ -44,7 +42,8 @@ def nsga_sort(obj_vals, return_fronts):
 
 
 def get_Fronts(obj_vals):
-    """Fast non-dominated sort.
+    """
+    Fast non-dominated sort.
 
     Args:
       obj_vals - (torch_tensor) - Objective values of each individual
@@ -104,7 +103,8 @@ def get_Fronts(obj_vals):
 
 
 def _get_crowding_dist(obj_vector):
-    """Returns crowding distance of a vector of values, used once on each front.
+    """
+    Returns crowding distance of a vector of values, used once on each front.
     Note: Crowding distance of individuals at each end of front is infinite, as
     they don't have a neighbor.
     Args:
