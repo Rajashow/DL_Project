@@ -12,6 +12,7 @@ def nsga_sort(obj_vals, return_fronts):
     Args:
     obj_vals - (torch_tensor) - Objective values of each individual
                 [nInds X nObjectives]
+                obj_vals:: [fitness,objective_context_pareto_max]
 
     Returns:
     rank    - (torch_tensor) - Rank in population of each individual
