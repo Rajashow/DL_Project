@@ -41,6 +41,13 @@ def nsga_sort(obj_vals, return_fronts=False):
         return rank
 
 
+def rank_array(obj):
+    tmp = torch.argsort(obj)
+    rank = torch.empty_like(tmp)
+    rank[tmp] = torch.arange(len(obj))
+    return rank
+
+
 def get_Fronts(obj_vals):
     """
     Fast non-dominated sort.
