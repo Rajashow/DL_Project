@@ -15,11 +15,10 @@ class Train():
 
         self._sample_p = 1/((np.arange(2, self.n_pop+1, 2))**2)
 
+        self.gen = 0
+
     def populate(self):
-        if self.pop:
-            self.mutate()
-        else:
-            self.pop = [self.ind(self.init_class_args)] * self.n_pop
+        self.pop = [self.ind(self.init_class_args)] * self.n_pop
 
     def mutate(self):
 
@@ -57,12 +56,16 @@ class Train():
 
     def train(self, x, y, loss):
         for pop in self.pop:
-            y_ = self.pop.forward(x, self.hyp["w"])
+            y_ = pop.forward(x, self.hyp["w"])
             pop.fitness = -loss(y_, y)
 
     def iterate(self, x, y, loss):
-        self.populate()
+        if self.pop:
+            self.populate()
+        else:
+            self.mutate()
         self.train(x, y, loss)
         self.give_rank()
         self.reap()
-        self.mutate()
+
+        self.gen += 1
