@@ -1,7 +1,4 @@
-import functools
-import operator
-import numpy
-import itertools
+
 from scipy.ndimage.filters import gaussian_filter1d
 import matplotlib.pyplot as plt
 import torch
@@ -9,11 +6,24 @@ from ranker import nsga_sort, rank_array
 import numpy as np
 from wann import wann
 
-from ulti import get_pop_rank
+from ulti import get_pop_rank, functools_reduce_iconcat
 
 
 class Train():
     def __init__(self, wann_class, init_class_args, n_pop, hyper_params):
+        """Create a class that trains the NN and finds a WANNs for you.
+
+        Arguments:
+            wann_class {class} -- class of an individual WANN
+            init_class_args {dict} -- dict that can be passed into the WANN for init
+            n_pop {int} -- size of the training population
+            hyper_params {dict} -- training hyper param:
+                                    must have:
+                                    - "%_reap": percent of pop that is kill in each gen
+                                    - "w" : deafult weight of WANN NN
+                                    - "p_weighed_rank": percent of times you try to maximize fitness
+                                        for number of connetions
+        """
         self.pop = []
         self.ind = wann_class
         self.init_class_args = init_class_args
@@ -29,10 +39,16 @@ class Train():
         self.running_fitness = 0
 
     def populate(self):
+        """
+        Create a population of max size allowed with the init param that was passed
+        """
         self.pop = [self.ind(**self.init_class_args)
                     for i in range(self.n_pop)]
 
-    def mutate(self):
+    def replace_reaped_with_mutated(self):
+        """
+        Based on replace the reaped population with mutation of surviving population
+        """
         if len(self.pop) != self.n_pop:
             n_samples = self.n_pop-len(self.pop)
             p = self._sample_p[:n_samples]
@@ -44,7 +60,9 @@ class Train():
                 self.pop.extend(self.pop[index].mutate(1))
 
     def give_rank(self):
-
+        """
+        For each wann in the population give them a rank.
+        """
         mean_fit = np.asarray([ind.fitness for ind in self.pop])
         n_conns = np.asarray([ind.edge_count() for ind in self.pop])
 
@@ -59,18 +77,27 @@ class Train():
             rank = rank_array(-obj_vals[:, 0])
 
         # Assign ranks
-        # for i in range(len(self.pop)):
-        #     self.pop[i].rank = rank[i]
-
-        # Assign ranks
         for (pop, rank) in zip(self.pop, rank):
             pop.rank = rank
 
     def reap(self):
+        """
+        Reap/kill the % of population that didn't perform well
+        """
         self.pop.sort(key=get_pop_rank)
         self.pop = self.pop[:len(self.pop)-self._reap_per_gen]
 
     def train(self, x, y, loss, print_fit=False):
+        """For each wann perfom a forward pass and get it's fitness
+
+        Arguments:
+            x {torch_tensor} -- x inputs
+            y {torch_tensor} -- y target
+            loss {func} -- used to get the loss of the predicted and the inverse of this is used as fitness
+
+        Keyword Arguments:
+            print_fit {bool} -- print the fitness of a given gen (default: {False})
+        """
         mean_fitnesses = 0
         for pop in self.pop:
             y_ = pop.forward(x, self.hyp["w"])
@@ -86,15 +113,25 @@ class Train():
             print(f"#{self.gen+1} mean fitness {mean_fitnesses}")
 
     def _self_mutate(self):
+        """
+        replace all of the population with it's own mutation
+        """
         for i in range(len(self.pop)):
             self.pop[i] = self.pop[i].mutate(1)[0]
 
     def iterate(self, x, y, loss):
+        """Primary method used to interface with wanns
+
+        Arguments:
+            x {torch_tensor} -- input
+            y {torch_tensor} -- target
+            loss {func} -- loss function
+        """
         if not self.pop:
             self.populate()
             self._self_mutate()
         else:
-            self.mutate()
+            self.replace_reaped_with_mutated()
         self.train(x, y, loss)
         self.give_rank()
         self.reap()
@@ -102,6 +139,11 @@ class Train():
         self.gen += 1
 
     def plot_fitness(self, smooth=0):
+        """plot the losses for each iter
+
+        Keyword Arguments:
+            smooth {int} -- power level for smoothing must be odd (default: {0})
+        """
         plt.figure()
         if smooth:
             plt.plot(gaussian_filter1d(self.history, smooth), label="fitness")
@@ -113,9 +155,12 @@ class Train():
         plt.show()
 
     def visualize_sample(self, shape=(5, 5), plot_args=None):
+        """Create a plot grid with the size shape where each cell has a wann network
 
-        def functools_reduce_iconcat(a):
-            return functools.reduce(operator.iconcat, a, [])
+        Keyword Arguments:
+            shape {tuple} -- the shape of grid (default: {(5, 5)})
+            plot_args {dict} -- not implemented (default: {None})
+        """
 
         w, h = shape
         samples = np.random.choice(
@@ -138,8 +183,8 @@ if __name__ == "__main__":
     x = torch.rand((10, 784))
     y = torch.randint(300, (10,))
     loss = torch.nn.CrossEntropyLoss()
-    # for i in range(50):
-    # trainer.iterate(x, y, loss)
+    for i in range(50):
+        trainer.iterate(x, y, loss)
     trainer.populate()
-    # trainer.pop[0].visualize()
-    # trainer.plot_fitness()
+    trainer.pop[0].visualize()
+    trainer.plot_fitness()
