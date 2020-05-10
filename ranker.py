@@ -1,5 +1,6 @@
 import torch
 import torch.functional
+import numpy as np
 
 
 def nsga_sort(obj_vals, return_fronts=False):
@@ -27,25 +28,18 @@ def nsga_sort(obj_vals, return_fronts=False):
         x1 = obj_vals[fronts[f], 0]
         x2 = obj_vals[fronts[f], 1]
         crowd_dist = _get_crowding_dist(x1) + _get_crowding_dist(x2)
-        front_rank = torch.argsort(-crowd_dist)
+        front_rank = np.argsort(-crowd_dist)
         fronts[f] = [fronts[f][i] for i in front_rank]
 
     # Convert to ranking
-    tmp = torch.Tensor([ind for front in fronts for ind in front])
-    rank = torch.empty_like(tmp)
-    rank[tmp] = torch.arange(len(tmp))
+    tmp = np.array([ind for front in fronts for ind in front])
+    rank = np.empty_like(tmp)
+    rank[tmp] = np.arange(len(tmp))
 
     if return_fronts:
         return rank, fronts
     else:
-        return rank
-
-
-def rank_array(obj):
-    tmp = torch.argsort(obj)
-    rank = torch.empty_like(tmp)
-    rank[tmp] = torch.arange(len(obj))
-    return rank
+        return rank, None
 
 
 def get_Fronts(obj_vals):
@@ -123,24 +117,30 @@ def _get_crowding_dist(obj_vector):
                   [nIndividuals X 1]
     """
     # Order by objective value
-    key = torch.argsort(obj_vector)
+    key = np.argsort(obj_vector)
     sorted_obj = obj_vector[key]
 
     # Distance from values on either side
     # Edges have infinite distance
-    inf_tensor = torch.Tensor((float("inf"),))
 
-    shift_vec = torch.cat((inf_tensor, sorted_obj, inf_tensor))
+    shift_vec = np.r_[np.inf, sorted_obj, np.inf]
 
-    prev_dist = torch.abs(sorted_obj-shift_vec[:-2])
-    next_dist = torch.abs(sorted_obj-shift_vec[2:])
+    prev_dist = np.abs(sorted_obj-shift_vec[:-2])
+    next_dist = np.abs(sorted_obj-shift_vec[2:])
     crowd = prev_dist+next_dist
     if (sorted_obj[-1] - sorted_obj[0]) > 0:
         # Normalize by fitness range
-        crowd *= torch.abs((1/sorted_obj[-1]-sorted_obj[0]))
+        crowd *= np.abs((1/sorted_obj[-1]-sorted_obj[0]))
 
     # Restore original order
-    dist = torch.empty(len(key))
+    dist = np.empty(len(key))
     dist[key] = crowd[:]
 
     return dist
+
+
+def rank_array(obj):
+    tmp = np.argsort(obj)
+    rank = np.empty_like(tmp)
+    rank[tmp] = np.arange(len(obj))
+    return rank
