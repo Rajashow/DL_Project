@@ -73,7 +73,7 @@ class Train():
         mean_fitnesses = 0
         for pop in self.pop:
             y_ = pop.forward(x, self.hyp["w"])
-            pop.fitness = (1/loss(y_, y)).data
+            pop.fitness = (1/loss(y_, y)).item
             mean_fitnesses += pop.fitness
 
         mean_fitnesses /= self.n_pop
