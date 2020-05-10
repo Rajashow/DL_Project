@@ -1,3 +1,8 @@
+import functools
+import operator
+import numpy
+import itertools
+from scipy.ndimage.filters import gaussian_filter1d
 import matplotlib.pyplot as plt
 import torch
 from ranker import nsga_sort, rank_array
@@ -19,6 +24,7 @@ class Train():
 
         self.gen = 0
         self.history = []
+        self.running_fitness = 0
 
     def populate(self):
         self.pop = [self.ind(**self.init_class_args)] * self.n_pop
@@ -29,7 +35,7 @@ class Train():
             p = self._sample_p[:n_samples]
             p /= np.sum(p)
             sample_idxs = np.random.choice(
-                n_samples, len(self.pop), p=p)
+                n_samples, len(self.pop), replace=True, p=p)
 
             for index in sample_idxs:
                 self.pop.extend(self.pop[index].mutate(1))
@@ -68,7 +74,10 @@ class Train():
             y_ = pop.forward(x, self.hyp["w"])
             pop.fitness = 1/loss(y_, y)
             mean_fitnesses += pop.fitness
+
         mean_fitnesses /= self.n_pop
+
+        self.running_fitness += mean_fitnesses
 
         self.history.append(mean_fitnesses)
         if print_fit:
@@ -86,12 +95,30 @@ class Train():
 
         self.gen += 1
 
-    def plot_fitness(self):
+    def plot_fitness(self, smooth=0):
         plt.figure()
-        plt.plot(self.history, label="fitness")
+        if smooth:
+            plt.plot(gaussian_filter1d(self.history, smooth), label="fitness")
+        else:
+            plt.plot(self.history, label="fitness")
         plt.xlabel("Gen")
         plt.ylabel("Fitness (1/loss)")
         plt.title("Mean Fitness")
+        plt.show()
+
+    def visualize_sample(self, shape=(5, 5)):
+
+        def functools_reduce_iconcat(a):
+            return functools.reduce(operator.iconcat, a, [])
+
+        w, h = shape
+        samples = np.random.choice(
+            self.pop, w*h, replace=len(self.pop) < (w*h))
+        fig, axs = plt.subplots(*shape)
+
+        for ax, pop in zip(functools_reduce_iconcat(axs), samples):
+            pop.visualize({"ax": ax})
+            ax.title(f"#{pop.rank} with {pop.fitness}")
         plt.show()
 
 
@@ -105,7 +132,9 @@ if __name__ == "__main__":
     x = torch.rand((10, 784))
     y = torch.randint(300, (10,))
     loss = torch.nn.CrossEntropyLoss()
-    for i in range(50):
-        trainer.iterate(x, y, loss)
-        # trainer.pop[0].visualize()
-    trainer.plot_fitness()
+    # for i in range(50):
+    # trainer.iterate(x, y, loss)
+    trainer.populate()
+    # trainer.pop[0].visualize()
+    # trainer.plot_fitness()
+    trainer.visualize_sample()

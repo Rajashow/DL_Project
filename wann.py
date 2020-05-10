@@ -145,10 +145,11 @@ class wann:
             tuple(output["o" + str(i)] for i in range(self.num_classes))).transpose(0, 1)
         return F.softmax(final, dim=1)
 
-    def visualize(self):
+    def visualize(self, arg_kwargs=None):
         """
         Creates diagram of WANN.
         """
+        arg_kwargs = arg_kwargs or None
         pos = {}
         layered_pos = nx.nx_pydot.graphviz_layout(self.g, prog='dot')
         max_x = -float("inf")
@@ -179,4 +180,4 @@ class wann:
             for i in range(self.num_classes):
                 labels["o" + str(i)] = "o" + str(i)
 
-        nx.draw(self.g, with_labels=True, pos=pos, labels=labels)
+        nx.draw(self.g, with_labels=True, pos=pos, labels=labels, **arg_kwargs)
