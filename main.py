@@ -8,8 +8,9 @@ import torch
 from torch.utils.data import DataLoader
 from torchvision import models
 
-# Import resnet basic
+# Import local files
 from resnet-basic import BasicRes
+from sketch-dataset import SketchDataSet
 
 # Global variables
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -132,6 +133,10 @@ def main():
     learning_rate, num_epochs, batch_size, experiment_name, momentum,
         weight_decay, inc_learning, upper_lr = parse_args(vars(args))
 
+    # Load data and split 80-20 to training-testing
+    train_dataset = SketchDataSet("./data/", is_train=True)
+    test_dataset = SketchDataSet("./data/", is_train=False)
+    
 
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=4)
     print('Loaded %d train images' % len(train_dataset))
