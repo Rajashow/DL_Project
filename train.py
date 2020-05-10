@@ -91,11 +91,13 @@ class Train():
         plt.plot(self.history, label="fitness")
         plt.xlabel("Gen")
         plt.ylabel("Fitness (1/loss)")
+        plt.title("Mean Fitness")
         plt.show()
 
 
 if __name__ == "__main__":
     wann_class = wann
+
     hyper_params = {"p_weighed_rank": .5, "w": -2, "%_reap": .5}
     class_args = {"input_dim": (784), "num_classes": 300}
     trainer = Train(wann_class, class_args, 100, hyper_params)
