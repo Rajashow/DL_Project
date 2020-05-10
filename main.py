@@ -16,7 +16,7 @@ device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 def train(train_loader, test_loader, learning_rate, num_epochs, experiment_name, 
             momentum, weight_decay, inc_learning, upper_lr, n_classes):
-    net = BasicRes(n_classes)
+    net = BasicRes(n_classes).to(device)
     criterion = nn.CrossEntropyLoss()
     optimizer = torch.optim.SGD(net.parameters(), lr=learning_rate, momentum=momentum, weight_decay=weight_decay)
 
