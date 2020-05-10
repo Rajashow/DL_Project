@@ -1,3 +1,4 @@
+import matplotlib.pyplot as plt
 import torch
 from ranker import nsga_sort, rank_array
 import numpy as np
@@ -35,8 +36,7 @@ class Train():
 
     def give_rank(self):
 
-        mean_fit = np.asarray([ind.fitness
-                               for ind in self.pop])
+        mean_fit = np.asarray([ind.fitness for ind in self.pop])
         n_conns = np.asarray([ind.edge_count() for ind in self.pop])
 
         # No connections is pareto optimal but boring...
@@ -44,7 +44,14 @@ class Train():
 
         obj_vals = np.c_[mean_fit, 1/n_conns]  # Maximize
         # to do rank fix
-        rank = rank_array(-obj_vals[:, 0])
+        if self.hyp['p_weighed_rank'] < np.random.rand():
+            rank = nsga_sort(obj_vals[:, [0, 1]])
+        else:  # Single objective
+            rank = rank_array(-obj_vals[:, 0])
+
+        # Assign ranks
+        # for i in range(len(self.pop)):
+        #     self.pop[i].rank = rank[i]
 
         # Assign ranks
         for (pop, rank) in zip(self.pop, rank):
@@ -59,10 +66,13 @@ class Train():
         mean_fitnesses = 0
         for pop in self.pop:
             y_ = pop.forward(x, self.hyp["w"])
-            pop.fitness = -loss(y_, y)
+            pop.fitness = 1/loss(y_, y)
             mean_fitnesses += pop.fitness
         mean_fitnesses /= self.n_pop
-        print(f"#{self.gen} mean fitness {mean_fitnesses}")
+
+        self.history.append(mean_fitnesses)
+
+        print(f"#{self.gen+1} mean fitness {mean_fitnesses}")
 
     def iterate(self, x, y, loss):
         if not self.pop:
@@ -76,16 +86,24 @@ class Train():
 
         self.gen += 1
 
+    def plot_fitness(self):
+        plt.figure()
+        plt.plot(self.history, label="fitness")
+        plt.xlabel("Gen")
+        plt.ylabel("Fitness (1/loss)")
+        plt.show()
+
 
 if __name__ == "__main__":
     wann_class = wann
     hyper_params = {"p_weighed_rank": .5, "w": -2, "%_reap": .5}
     class_args = {"input_dim": (784), "num_classes": 300}
-    trainer = Train(wann_class, class_args, 10, hyper_params)
+    trainer = Train(wann_class, class_args, 100, hyper_params)
 
     x = torch.rand((10, 784))
     y = torch.randint(300, (10,))
     loss = torch.nn.CrossEntropyLoss()
-    for i in range(10):
+    for i in range(50):
         trainer.iterate(x, y, loss)
         # trainer.pop[0].visualize()
+    trainer.plot_fitness()
