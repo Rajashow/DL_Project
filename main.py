@@ -1,15 +1,15 @@
 """ Adapted from Pulkit's modified main() from hw-4 """
 import os
 import random
-import cv2
 import numpy as np
 import argparse
 import torch
+import torch.nn as nn
 from torch.utils.data import DataLoader
-from torchvision import models
 
-# Import resnet basic
-from resnet-basic import BasicRes
+# Import local files
+from resnetbasic import BasicRes
+from sketchdataset import SketchDataSet
 
 # Global variables
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -97,9 +97,9 @@ def get_parser():
     parser.add_argument('--batch', type=int, default=24)
     parser.add_argument('--name', type=str, required=False, default="default-experiment")
     parser.add_argument('--momentum', type=float, required=False, default=0.9)
-    parser.add_argument('--weight-decay', type=float, required=False, default=5e-4)
-    parser.add_argument('--incr-lr', type=bool, required=False, default=False)
-    parser.add_argument('--upper-lr', type=float, required=False, default=0.01)
+    parser.add_argument('--weightdecay', type=float, required=False, default=5e-4)
+    parser.add_argument('--incrlr', type=bool, required=False, default=False)
+    parser.add_argument('--upperlr', type=float, required=False, default=0.01)
     return parser
 
 def parse_args(args_dict):
@@ -108,14 +108,14 @@ def parse_args(args_dict):
     batch_size = args_dict['batch']
     experiment_name = args_dict['name']
     momentum = args_dict['momentum']
-    weight_decay = args_dict['weight-decay']
-    inc_learning = args_dict['incr-lr']
-    upper_lr = args_dict['upper-lr']
+    weight_decay = args_dict['weightdecay']
+    inc_learning = args_dict['incrlr']
+    upper_lr = args_dict['upperlr']
 
     for key in args_dict.keys():
-        print('parsed {} for {}'.format(arg_dicts[key], key))
+        print('parsed {} for {}'.format(args_dict[key], key))
     
-    return learning_rate, num_epochs, batch_size, experiment_name, momentum,
+    return learning_rate, num_epochs, batch_size, experiment_name, momentum, \
         weight_decay, inc_learning, upper_lr
 
 
@@ -123,15 +123,19 @@ def parse_args(args_dict):
 def main():
     '''
     Defualt main call:
-        `main.py --lr 0.001 --epochs 50 --batch 24 --name default-experiment \
-            --momentum 0.9 --weight-decay 5e-4 --incr-lr False --upper-lr 0.01`
+        `main.py --lr 0.001 --epochs 50 --batch 1 --name default-experiment \
+            --momentum 0.9 --weightdecay 5e-4 --incrlr False --upperlr 0.01`
     '''
     # Parse arguments
     parser = get_parser()
     args = parser.parse_args()
-    learning_rate, num_epochs, batch_size, experiment_name, momentum,
+    learning_rate, num_epochs, batch_size, experiment_name, momentum, \
         weight_decay, inc_learning, upper_lr = parse_args(vars(args))
 
+    # Load data and split 80-20 to training-testing
+    train_dataset = SketchDataSet("./data/", is_train=True)
+    test_dataset = SketchDataSet("./data/", is_train=False)
+    
 
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=4)
     print('Loaded %d train images' % len(train_dataset))
