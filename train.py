@@ -32,7 +32,7 @@ class Train():
         self.hyp = hyper_params
         self._reap_per_gen = int(self.n_pop*self.hyp["%_reap"])
 
-        self._sample_p = 1/((2*np.arange(1, self.n_pop+1))**2)
+        self._sample_p = np.arange(self.n_pop+1, 0, -1)
 
         self.gen = 0
         self.history = []
@@ -49,13 +49,18 @@ class Train():
         """
         Based on replace the reaped population with mutation of surviving population
         """
+        # if the pop isn't full
         if len(self.pop) != self.n_pop:
+            # get the difference
             n_samples = self.n_pop-len(self.pop)
+            # get the pop of having them
             p = self._sample_p[:n_samples]
+            # standardized
             p /= np.sum(p)
+            # sample based on the pop with replacement
             sample_idxs = np.random.choice(
                 n_samples, len(self.pop), replace=True, p=p)
-
+            # create pop
             for index in sample_idxs:
                 self.pop.extend(self.pop[index].mutate(1))
 
@@ -66,11 +71,12 @@ class Train():
         mean_fit = np.asarray([ind.fitness for ind in self.pop])
         n_conns = np.asarray([ind.edge_count() for ind in self.pop])
 
-        # No connections is pareto optimal but boring...
+        # No connections is pareto optimal can useless
         n_conns[n_conns == 0] = 1
 
-        obj_vals = np.c_[mean_fit, 1/n_conns]  # Maximize
-        # to do rank fix
+        # objectives to Maximize
+        obj_vals = np.c_[mean_fit, 1/n_conns]
+
         if self.hyp['p_weighed_rank'] < np.random.rand():
             rank = nsga_sort(obj_vals[:, [0, 1]])
         else:  # Single objective
@@ -106,9 +112,10 @@ class Train():
 
         mean_fitnesses /= self.n_pop
 
+        # track fitness
         self.running_fitness += mean_fitnesses
-
         self.history.append(mean_fitnesses)
+
         if print_fit:
             print(f"#{self.gen+1} mean fitness {mean_fitnesses}")
 
@@ -119,17 +126,19 @@ class Train():
         for i in range(len(self.pop)):
             self.pop[i] = self.pop[i].mutate(1)[0]
 
-    def iterate(self, x, y, loss):
+    def iterate(self, x, y, loss, init_mutate=100):
         """Primary method used to interface with wanns
 
         Arguments:
             x {torch_tensor} -- input
             y {torch_tensor} -- target
             loss {func} -- loss function
+            init_mutate {int} -- number of mutation from init for init pop. (default: {100})
         """
         if not self.pop:
             self.populate()
-            self._self_mutate()
+            for _ in range(100):
+                self._self_mutate()
         else:
             self.replace_reaped_with_mutated()
         self.train(x, y, loss)
@@ -165,7 +174,7 @@ class Train():
         w, h = shape
         samples = np.random.choice(
             self.pop, w*h, replace=len(self.pop) < (w*h))
-        fig, axs = plt.subplots(*shape)
+        fig, axs = plt.subplots(*shape, figsize=(w*2, h*2))
 
         for ax, pop in zip(functools_reduce_iconcat(axs), samples):
             pop.visualize({"ax": ax})
@@ -177,7 +186,7 @@ if __name__ == "__main__":
     wann_class = wann
 
     hyper_params = {"p_weighed_rank": .5, "w": -2, "%_reap": .5}
-    class_args = {"input_dim": (784), "num_classes": 300}
+    class_args = {"input_dim": (784), "output_dim": 300}
     trainer = Train(wann_class, class_args, 100, hyper_params)
 
     x = torch.rand((10, 784))
