@@ -17,6 +17,7 @@ class Train():
         self._sample_p = 1/((2*np.arange(1, self.n_pop+1))**2)
 
         self.gen = 0
+        self.history = []
 
     def populate(self):
         self.pop = [self.ind(**self.init_class_args)] * self.n_pop
@@ -34,7 +35,8 @@ class Train():
 
     def give_rank(self):
 
-        mean_fit = np.asarray([ind.fitness for ind in self.pop])
+        mean_fit = np.asarray([ind.fitness
+                               for ind in self.pop])
         n_conns = np.asarray([ind.edge_count() for ind in self.pop])
 
         # No connections is pareto optimal but boring...
@@ -42,7 +44,7 @@ class Train():
 
         obj_vals = np.c_[mean_fit, 1/n_conns]  # Maximize
         # to do rank fix
-        rank = rank_array(-obj_vals[:, 0]*obj_vals[:, 1])
+        rank = rank_array(-obj_vals[:, 0])
 
         # Assign ranks
         for (pop, rank) in zip(self.pop, rank):
@@ -86,4 +88,4 @@ if __name__ == "__main__":
     loss = torch.nn.CrossEntropyLoss()
     for i in range(10):
         trainer.iterate(x, y, loss)
-        trainer.pop[0].visualize()
+        # trainer.pop[0].visualize()
