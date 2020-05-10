@@ -86,7 +86,7 @@ class Train():
 
     def _self_mutate(self):
         for i in range(len(self.pop)):
-            self.pop[i] = self.pop[i].mutate(1)
+            self.pop[i] = self.pop[i].mutate(1)[0]
 
     def iterate(self, x, y, loss):
         if not self.pop:
