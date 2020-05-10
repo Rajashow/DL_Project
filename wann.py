@@ -149,7 +149,7 @@ class wann:
         """
         Creates diagram of WANN.
         """
-        arg_kwargs = arg_kwargs or None
+        arg_kwargs = arg_kwargs or {}
         pos = {}
         layered_pos = nx.nx_pydot.graphviz_layout(self.g, prog='dot')
         max_x = -float("inf")

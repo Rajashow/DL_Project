@@ -9,6 +9,8 @@ from ranker import nsga_sort, rank_array
 import numpy as np
 from wann import wann
 
+from ulti import get_pop_rank
+
 
 class Train():
     def __init__(self, wann_class, init_class_args, n_pop, hyper_params):
@@ -64,7 +66,6 @@ class Train():
             pop.rank = rank
 
     def reap(self):
-        def get_pop_rank(pop): return pop.rank
         self.pop.sort(key=get_pop_rank)
         self.pop = self.pop[:len(self.pop)-self._reap_per_gen]
 
@@ -72,7 +73,7 @@ class Train():
         mean_fitnesses = 0
         for pop in self.pop:
             y_ = pop.forward(x, self.hyp["w"])
-            pop.fitness = 1/loss(y_, y)
+            pop.fitness = (1/loss(y_, y)).data
             mean_fitnesses += pop.fitness
 
         mean_fitnesses /= self.n_pop
@@ -83,10 +84,14 @@ class Train():
         if print_fit:
             print(f"#{self.gen+1} mean fitness {mean_fitnesses}")
 
+    def _self_mutate(self):
+        for i in range(len(self.pop)):
+            self.pop[i] = self.pop[i].mutate(1)
+
     def iterate(self, x, y, loss):
         if not self.pop:
             self.populate()
-            self.mutate()
+            self._self_mutate()
         else:
             self.mutate()
         self.train(x, y, loss)
@@ -106,7 +111,7 @@ class Train():
         plt.title("Mean Fitness")
         plt.show()
 
-    def visualize_sample(self, shape=(5, 5)):
+    def visualize_sample(self, shape=(5, 5), plot_args=None):
 
         def functools_reduce_iconcat(a):
             return functools.reduce(operator.iconcat, a, [])
@@ -118,7 +123,7 @@ class Train():
 
         for ax, pop in zip(functools_reduce_iconcat(axs), samples):
             pop.visualize({"ax": ax})
-            ax.set_title(f"#{pop.rank} with {pop.fitness}")
+            ax.set_title(f"#{pop.rank} with {pop.fitness:.3f}")
         plt.show()
 
 
@@ -137,4 +142,3 @@ if __name__ == "__main__":
     trainer.populate()
     # trainer.pop[0].visualize()
     # trainer.plot_fitness()
-    trainer.visualize_sample()
