@@ -62,7 +62,7 @@ class Train():
         self.pop.sort(key=get_pop_rank)
         self.pop = self.pop[:len(self.pop)-self._reap_per_gen]
 
-    def train(self, x, y, loss):
+    def train(self, x, y, loss, print_fit=False):
         mean_fitnesses = 0
         for pop in self.pop:
             y_ = pop.forward(x, self.hyp["w"])
@@ -71,8 +71,8 @@ class Train():
         mean_fitnesses /= self.n_pop
 
         self.history.append(mean_fitnesses)
-
-        print(f"#{self.gen+1} mean fitness {mean_fitnesses}")
+        if print_fit:
+            print(f"#{self.gen+1} mean fitness {mean_fitnesses}")
 
     def iterate(self, x, y, loss):
         if not self.pop:
