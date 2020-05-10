@@ -118,7 +118,7 @@ class Train():
 
         for ax, pop in zip(functools_reduce_iconcat(axs), samples):
             pop.visualize({"ax": ax})
-            ax.title(f"#{pop.rank} with {pop.fitness}")
+            ax.set_title(f"#{pop.rank} with {pop.fitness}")
         plt.show()
 
 
