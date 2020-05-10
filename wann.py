@@ -127,15 +127,13 @@ class wann:
         Softmax at end for probabilities of each class.
         """
         assert len(batch.shape) == 2 and batch.shape[1] == self.input_dim
-        assert torch.cuda.is_available()
-        cuda = torch.device("cuda")
+        device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
-        output = {i: torch.zeros(batch.shape[0], device=cuda)
-                  for i in range(self.hidden)}
+        output = {i: torch.zeros(batch.shape[0], device=device) for i in range(self.hidden)}
         for i in range(self.input_dim):
             output["i" + str(i)] = batch[:, i]
         for i in range(self.num_classes):
-            output["o" + str(i)] = torch.zeros(batch.shape[0], device=cuda)
+            output["o" + str(i)] = torch.zeros(batch.shape[0], device=device)
 
         for v in topological_sort(self.g):
             activation = self.activations[v]
@@ -144,8 +142,7 @@ class wann:
             for w in self.g.neighbors(v):
                 output[w] += weight * output[v]
 
-        final = torch.stack(
-            tuple(output["o" + str(i)] for i in range(self.num_classes))).transpose(0, 1)
+        final = torch.stack(tuple(output["o" + str(i)] for i in range(self.num_classes))).transpose(0, 1)
         return F.softmax(final, dim=1)
 
     def visualize(self, arg_kwargs=None):
@@ -169,11 +166,9 @@ class wann:
         for v, (x, y) in layered_pos.items():
             if isinstance(v, str):
                 if v[0] == 'i':
-                    pos[v] = (min_x, (max_y - min_y) * int(v[1:]) /
-                              (self.input_dim - 1) + min_y)
+                    pos[v] = (min_x, (max_y - min_y) * int(v[1:]) / (self.input_dim - 1) + min_y)
                 else:
-                    pos[v] = (max_x, (max_y - min_y) * int(v[1:]) /
-                              (self.num_classes - 1) + min_y)
+                    pos[v] = (max_x, (max_y - min_y) * int(v[1:]) / (self.num_classes - 1) + min_y)
             else:
                 pos[v] = (-y, x)
 
@@ -181,8 +176,10 @@ class wann:
         for i in range(self.hidden):
             if self.activations[i] is None:
                 labels[i] = "None"
-            else:
+            elif len(self.activations[i].__name__) <= 4:
                 labels[i] = self.activations[i].__name__
+            else:
+                labels[i] = self.activations[i].__name__[:3]
         if self.input_dim <= 20:
             for i in range(self.input_dim):
                 labels["i" + str(i)] = "i" + str(i)
@@ -190,4 +187,13 @@ class wann:
             for i in range(self.num_classes):
                 labels["o" + str(i)] = "o" + str(i)
 
-        nx.draw(self.g, with_labels=True, pos=pos, labels=labels, **arg_kwargs)
+        color_map = []
+        for v in self.g:
+            if isinstance(v, int):
+                color_map.append(0.5)
+            elif v[0] == "i":
+                color_map.append(0.2)
+            else:
+                color_map.append(0.7)
+
+        nx.draw(self.g, with_labels=True, pos=pos, labels=labels, node_size=400, node_color=color_map, cmap=plt.cm.Blues, vmin=0, vmax=1, **arg_kwargs)
