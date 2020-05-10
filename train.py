@@ -29,7 +29,8 @@ class Train():
         self.running_fitness = 0
 
     def populate(self):
-        self.pop = [self.ind(**self.init_class_args)] * self.n_pop
+        self.pop = [self.ind(**self.init_class_args)
+                    for i in range(self.n_pop)]
 
     def mutate(self):
         if len(self.pop) != self.n_pop:
