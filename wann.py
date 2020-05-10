@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import random
 import torch
 import torch.nn.functional as F
-from torch import tanh
+
 from networkx.algorithms.dag import topological_sort
 
 
@@ -69,7 +69,7 @@ class wann:
         """
         self.activations[v] = activation
 
-    def mutate(self, num_children, activations=[torch.sigmoid, F.relu, tanh]):
+    def mutate(self, num_children, activations=[torch.sigmoid, F.relu, torch.tanh]):
         """
         Returns a list of children.
         """
@@ -127,12 +127,15 @@ class wann:
         Softmax at end for probabilities of each class.
         """
         assert len(batch.shape) == 2 and batch.shape[1] == self.input_dim
+        assert torch.cuda.is_available()
+        cuda = torch.device("cuda")
 
-        output = {i: torch.zeros(batch.shape[0]) for i in range(self.hidden)}
+        output = {i: torch.zeros(batch.shape[0], device=cuda)
+                  for i in range(self.hidden)}
         for i in range(self.input_dim):
             output["i" + str(i)] = batch[:, i]
         for i in range(self.num_classes):
-            output["o" + str(i)] = torch.zeros(batch.shape[0])
+            output["o" + str(i)] = torch.zeros(batch.shape[0], device=cuda)
 
         for v in topological_sort(self.g):
             activation = self.activations[v]
@@ -152,18 +155,25 @@ class wann:
         arg_kwargs = arg_kwargs or {}
         pos = {}
         layered_pos = nx.nx_pydot.graphviz_layout(self.g, prog='dot')
+        min_x = float("inf")
         max_x = -float("inf")
         min_y = float("inf")
         max_y = -float("inf")
         for v, (x, y) in layered_pos.items():
+            min_x = min(min_x, -y)
             max_x = max(max_x, -y)
             if not isinstance(v, str) or v[0] != 'o':
                 min_y = min(min_y, x)
                 max_y = max(max_y, x)
+
         for v, (x, y) in layered_pos.items():
-            if isinstance(v, str) and v[0] == 'o':
-                pos[v] = (max_x, (max_y - min_y) * int(v[1]) /
-                          (self.num_classes - 1) + min_y)
+            if isinstance(v, str):
+                if v[0] == 'i':
+                    pos[v] = (min_x, (max_y - min_y) * int(v[1:]) /
+                              (self.input_dim - 1) + min_y)
+                else:
+                    pos[v] = (max_x, (max_y - min_y) * int(v[1:]) /
+                              (self.num_classes - 1) + min_y)
             else:
                 pos[v] = (-y, x)
 
