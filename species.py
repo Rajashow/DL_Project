@@ -11,6 +11,11 @@ class Species():
         self.species_list = []
 
     def reap(self, p):
+        """reaps a percents of the pop based on fitness
+
+        Arguments:
+            p {float} -- percent of pop to reap
+        """
         numb_to_reap = int(len(self.species_list)*p)
 
         self.species_list.sort(key=get_pop_rank)
@@ -18,6 +23,11 @@ class Species():
             self.species_list)-numb_to_reap]
 
     def speciete(self):
+        """split a species into two based on fitness
+
+        Returns:
+            tuple -- tuple of 2 species(self, new species)
+        """
         self.species_list.sort(key=get_pop_loss)
         fitness = [get_pop_loss(s) for s in self.species_list]
 
