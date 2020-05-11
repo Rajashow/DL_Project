@@ -25,12 +25,12 @@ class SketchDataSet(Dataset):
                 data = np.load(directory + filename)
                 self.fnames[i] = directory + filename
                 if is_train:
-                    self.num_images += int(len(data)*0.8)
-                    self.fsize[i] = int(len(data)*0.8)
+                    self.num_images += int(len(data)*0.1)
+                    self.fsize[i] = int(len(data)*0.1)
                     self.fimgsize[i] = self.num_images
                 else:
-                    self.num_images += int(len(data)*0.2)
-                    self.fsize[i] = int(len(data)*0.2)
+                    self.num_images += int(len(data)*0.025)
+                    self.fsize[i] = int(len(data)*0.025)
                     self.fimgsize[i] = self.num_images
                 i += 1
             
@@ -56,13 +56,13 @@ class SketchDataSet(Dataset):
             for i in range(0, self.num_class):
                 if ind - self.fimgsize[i] < 0 and i == 0:
                     np_dat = np.load(self.fnames[0])
-                    ind_offset = int(len(np_dat)*0.8)
+                    ind_offset = int(len(np_dat)*0.1)
 
                     img_dat = np_dat[ind + ind_offset].reshape(1, 28, 28).astype(np.float32)
                     return torch.from_numpy(img_dat), i
                 elif ind - self.fimgsize[i] < 0:
                     np_dat = np.load(self.fnames[0])
-                    ind_offset = int(len(np_dat)*0.8)
+                    ind_offset = int(len(np_dat)*0.1)
 
                     img_dat = np_dat[ind + ind_offset - self.fimgsize[i-1]].reshape(1, 28, 28).astype(np.float32)
                     return torch.from_numpy(img_dat), i
