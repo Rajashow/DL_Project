@@ -38,6 +38,8 @@ class Train():
         self.history = []
         self.running_fitness = 0
 
+        self.spe
+
     def populate(self):
         """
         Create a population of max size allowed with the init param that was passed
@@ -136,9 +138,11 @@ class Train():
             init_mutate {int} -- number of mutation from init for init pop. (default: {100})
         """
         if not self.pop:
+            print("Creating new population")
             self.populate()
             for _ in range(100):
                 self._self_mutate()
+            print("Done creating a population")
         else:
             self.replace_reaped_with_mutated()
         self.train(x, y, loss)
@@ -174,7 +178,7 @@ class Train():
         w, h = shape
         samples = np.random.choice(
             self.pop, w*h, replace=len(self.pop) < (w*h))
-        fig, axs = plt.subplots(*shape, figsize=(w*2, h*2))
+        fig, axs = plt.subplots(*shape, figsize=(w*10, h*10))
 
         for ax, pop in zip(functools_reduce_iconcat(axs), samples):
             pop.visualize({"ax": ax})
@@ -192,8 +196,8 @@ if __name__ == "__main__":
     x = torch.rand((10, 784))
     y = torch.randint(300, (10,))
     loss = torch.nn.CrossEntropyLoss()
-    for i in range(50):
-        trainer.iterate(x, y, loss)
+    # for i in range(50):
+    #     trainer.iterate(x, y, loss)
     trainer.populate()
     trainer.pop[0].visualize()
     trainer.plot_fitness()
