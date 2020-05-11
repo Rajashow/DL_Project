@@ -1,3 +1,4 @@
+import json
 import networkx as nx
 import matplotlib.pyplot as plt
 import random
@@ -6,6 +7,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from networkx.algorithms.dag import topological_sort
+from networkx.readwrite import json_graph
 
 
 class wann:
@@ -70,10 +72,11 @@ class wann:
         """
         self.activations[v] = activation
 
-    def mutate(self, num_children, activations=[torch.sigmoid, F.relu, torch.tanh]):
+    def mutate(self, num_children):
         """
         Returns a list of children.
         """
+        activations = [torch.sigmoid, F.relu, torch.tanh]
         children = []
         edges = list(nx.edges(self.g))
         non_edges = []
@@ -152,9 +155,11 @@ class wann:
 
     def visualize(self, arg_kwargs=None):
         """
-        Creates diagram of WANN.
-        """
+      Creates diagram of WANN.
+      """
         arg_kwargs = arg_kwargs or {}
+
+        # position map
         pos = {}
         layered_pos = nx.nx_pydot.graphviz_layout(self.g, prog='dot')
         min_x = float("inf")
@@ -167,26 +172,22 @@ class wann:
             if not isinstance(v, str) or v[0] != 'o':
                 min_y = min(min_y, x)
                 max_y = max(max_y, x)
+        if self.hidden == 0:
+            max_x = min_x + max_y - min_y
 
         for v, (x, y) in layered_pos.items():
             if isinstance(v, str):
                 if v[0] == 'i':
-                    pos[v] = (min_x, (max_y - min_y) * int(v[1:]) /
-                              (self.input_dim - 1) + min_y)
+                    pos[v] = (min_x, (max_y - min_y) * int(v[1:]) / (self.input_dim - 1) + min_y)
                 else:
-                    pos[v] = (max_x, (max_y - min_y) * int(v[1:]) /
-                              (self.output_dim - 1) + min_y)
+                    pos[v] = (max_x, (max_y - min_y) * int(v[1:]) / (self.output_dim - 1) + min_y)
             else:
                 pos[v] = (-y, x)
 
+        # labels
         labels = {}
         for i in range(self.hidden):
-            if self.activations[i] is None:
-                labels[i] = "None"
-            elif len(self.activations[i].__name__) <= 4:
-                labels[i] = self.activations[i].__name__
-            else:
-                labels[i] = self.activations[i].__name__[:3]
+            labels[i] = wann.act_to_str(self.activations[i])
         if self.input_dim <= 20:
             for i in range(self.input_dim):
                 labels["i" + str(i)] = "i" + str(i)
@@ -194,6 +195,7 @@ class wann:
             for i in range(self.output_dim):
                 labels["o" + str(i)] = "o" + str(i)
 
+        # colors
         color_map = []
         for v in self.g:
             if isinstance(v, int):
@@ -203,8 +205,55 @@ class wann:
             else:
                 color_map.append(0.7)
 
-        nx.draw(self.g, with_labels=True, pos=pos, labels=labels, node_size=400,
-                node_color=color_map, cmap=plt.cm.Blues, vmin=0, vmax=1, **arg_kwargs)
+        nx.draw(self.g, with_labels=True, pos=pos, labels=labels, node_size=400, node_color=color_map,
+                cmap=plt.cm.Blues,
+                vmin=0, vmax=1, **arg_kwargs)
+
+    @staticmethod
+    def act_to_str(activation):
+        if activation is None:
+            return "None"
+        elif len(activation.__name__) <= 4:
+            return activation.__name__
+        return activation.__name__[:3]
+
+    @staticmethod
+    def str_to_act(s):
+        if s == "None":
+            return None
+        elif s == "relu":
+            return F.relu
+        elif s == "sig":
+            return torch.sigmoid
+        else:
+            return torch.tanh
+
+    @staticmethod
+    def save_json(wann, filename):
+        """
+      Saves WANN as a json file.
+      """
+        with open(filename + ".json", "w") as wann_file:
+            json.dump({
+                "input_dim": wann.input_dim,
+                "output_dim": wann.output_dim,
+                "hidden": wann.hidden,
+                "graph": json_graph.node_link_data(wann.g),
+                "activations": {v: wann.act_to_str(a) for v, a in wann.activations.items()}
+            }, wann_file)
+
+    @staticmethod
+    def load_json(filename):
+        """
+      Returns a WANN from a json file.
+      """
+        with open(filename + ".json", "r") as wann_file:
+            data = json.load(wann_file)
+            w = wann(data["input_dim"], data["output_dim"])
+            w.hidden = data["hidden"]
+            w.g = json_graph.node_link_graph(data["graph"])
+            w.activations = {v: wann.str_to_act(s) for v, s in data["activations"]}
+            return w
 
 
 class wannModel(nn.Module):
@@ -215,7 +264,7 @@ class wannModel(nn.Module):
             self.weights = {edge: nn.Parameter(
                 nn.Linear(1, 1).cuda(), requires_grad=True) for edge in nx.edges(self.wann.g)}
         else:
-            self.weights = {edge:  nn.Parameter(
+            self.weights = {edge: nn.Parameter(
                 nn.Linear(1, 1), requires_grad=True)
                 for edge in nx.edges(self.wann.g)}
         self.top_sort = topological_sort(self.wann.g)
@@ -240,7 +289,7 @@ class wannModel(nn.Module):
         output = {i: torch.zeros(x.shape[0], 1, device=device)
                   for i in range(self.wann.hidden)}
         for i in range(self.wann.input_dim):
-            output["i" + str(i)] = x[:, i:i+1]
+            output["i" + str(i)] = x[:, i:i + 1]
         for i in range(self.wann.output_dim):
             output["o" + str(i)] = torch.zeros(x.shape[0], 1, device=device)
 
