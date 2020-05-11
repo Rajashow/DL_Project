@@ -98,7 +98,7 @@ def get_parser():
     parser.add_argument('--name', type=str, required=False, default="default-experiment")
     parser.add_argument('--momentum', type=float, required=False, default=0.9)
     parser.add_argument('--weightdecay', type=float, required=False, default=5e-4)
-    parser.add_argument('--incrlr', type=bool, required=False, default=False)
+    parser.add_argument('--incrlr', action='store_true')
     parser.add_argument('--upperlr', type=float, required=False, default=0.01)
     return parser
 
