@@ -64,6 +64,8 @@ class Train():
             # create pop
             for index in sample_idxs:
                 self.pop.extend(self.pop[index].mutate(1))
+        self.sep = []
+        self.sep.append(Species(self.pop))
 
     def give_rank(self):
         """
