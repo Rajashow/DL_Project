@@ -9,6 +9,8 @@ from unidip import UniDip
 
 
 def should_speciate(loss):
+    if len(loss) == 1:
+        return False
     intervals = UniDip(loss).run()
     return len(intervals) != 1
 
