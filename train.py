@@ -1,12 +1,11 @@
-
-from scipy.ndimage.filters import gaussian_filter1d
-import matplotlib.pyplot as plt
-import torch
-from ranker import nsga_sort, rank_array
-import numpy as np
+from ulti import get_pop_rank, functools_reduce_iconcat, should_speciate
+from species import Species
 from wann import wann
-
-from ulti import get_pop_rank, functools_reduce_iconcat
+import numpy as np
+from ranker import nsga_sort, rank_array
+import torch
+import matplotlib.pyplot as plt
+from scipy.ndimage.filters import gaussian_filter1d
 
 
 class Train():
@@ -28,7 +27,6 @@ class Train():
         self.ind = wann_class
         self.init_class_args = init_class_args
         self.n_pop = n_pop
-        self.sep = None
         self.hyp = hyper_params
         self._reap_per_gen = int(self.n_pop*self.hyp["%_reap"])
 
@@ -38,7 +36,7 @@ class Train():
         self.history = []
         self.running_fitness = 0
 
-        self.spe
+        self.sep = []
 
     def populate(self):
         """
@@ -46,6 +44,7 @@ class Train():
         """
         self.pop = [self.ind(**self.init_class_args)
                     for i in range(self.n_pop)]
+        self.sep.append(Species(self.pop))
 
     def replace_reaped_with_mutated(self):
         """
@@ -92,8 +91,20 @@ class Train():
         """
         Reap/kill the % of population that didn't perform well
         """
+        self.pop = []
+        for sep in self.sep:
+            sep.reap(self.hyp["%_reap"])
+            self.pop.extend(sep.species_list)
+
         self.pop.sort(key=get_pop_rank)
-        self.pop = self.pop[:len(self.pop)-self._reap_per_gen]
+
+    def _speciate(self):
+        n_sep = []
+        for sep in self.sep:
+            if should_speciate(sep):
+                n_sep.extend(sep.speciate)
+            else:
+                n_sep.append(sep)
 
     def train(self, x, y, loss, print_fit=False):
         """For each wann perfom a forward pass and get it's fitness
@@ -140,13 +151,14 @@ class Train():
         if not self.pop:
             print("Creating new population")
             self.populate()
-            for _ in range(100):
+            for _ in range(1):
                 self._self_mutate()
             print("Done creating a population")
         else:
             self.replace_reaped_with_mutated()
         self.train(x, y, loss)
         self.give_rank()
+        self._speciate()
         self.reap()
 
         self.gen += 1
@@ -196,8 +208,8 @@ if __name__ == "__main__":
     x = torch.rand((10, 784))
     y = torch.randint(300, (10,))
     loss = torch.nn.CrossEntropyLoss()
-    # for i in range(50):
-    #     trainer.iterate(x, y, loss)
+    for i in range(50):
+        trainer.iterate(x, y, loss)
     trainer.populate()
     trainer.pop[0].visualize()
     trainer.plot_fitness()

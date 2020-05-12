@@ -5,6 +5,13 @@ import jenkspy
 import functools
 import operator
 
+from unidip import UniDip
+
+
+def should_speciate(loss):
+    intervals = UniDip(loss).run()
+    return len(intervals) != 1
+
 
 def get_split(loss):
     """given a list of values find the range of value that creates a split.

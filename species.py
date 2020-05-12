@@ -1,14 +1,13 @@
-from train import Train
 from wann import wann
-from ulti import get_pop_fitness, get_pop_rank, get_split, get_pop_loss
+from ulti import get_pop_rank, get_split, get_pop_loss
 import bisect
 
 
 class Species():
-    def __init__(self):
+    def __init__(self, pops):
         self.max_fit = 0
         self.mean_fit = 0
-        self.species_list = []
+        self.species_list = [pop for pop in pops]
 
     def reap(self, p):
         """reaps a percents of the pop based on fitness
@@ -22,6 +21,9 @@ class Species():
         self.species_list = self.species_list[:len(
             self.species_list)-numb_to_reap]
 
+    def get_fitness(self):
+        return [get_pop_loss(s) for s in self.species_list]
+
     def speciete(self):
         """split a species into two based on fitness
 
@@ -29,12 +31,12 @@ class Species():
             tuple -- tuple of 2 species(self, new species)
         """
         self.species_list.sort(key=get_pop_loss)
-        fitness = [get_pop_loss(s) for s in self.species_list]
+        fitness = self.get_fitness()
 
         bounds = get_split(fitness)
         split = bisect.bisect(fitness, bounds[1])
 
-        new_Species = Species()
+        new_Species = Species([])
 
         new_Species.species_list = self.species_list[:split]
         self.species_list = self.species_list[split:]
@@ -45,21 +47,26 @@ class Species():
         self.max_fit = max(fitness[split:])
         self.mean_fit = sum(fitness[split:])/len(fitness[split:])
 
-        return self, new_Species
+        for sep in self.species_list:
+            sep.species = self
+        for sep in new_Species.species_list:
+            sep = new_Species
+
+        return [self, new_Species]
 
 
-if __name__ == "__main__":
-    wann_class = wann
+# if __name__ == "__main__":
+#     wann_class = wann
 
-    hyper_params = {"p_weighed_rank": .5, "w": -2, "%_reap": .5}
-    class_args = {"input_dim": (784), "num_classes": 300}
-    trainer = Train(wann_class, class_args, 100, hyper_params)
-    trainer.populate()
-    for i in range(len(trainer.pop)):
-        if i > 50:
-            trainer.pop[i].fitness = 1/((i+1)+2)
-        else:
-            trainer.pop[i].fitness = 1/(i+1)
-    sp = Species()
-    sp.species_list = trainer.pop
-    sp.speciete()
+#     hyper_params = {"p_weighed_rank": .5, "w": -2, "%_reap": .5}
+#     class_args = {"input_dim": (784), "num_classes": 300}
+#     trainer = Train(wann_class, class_args, 100, hyper_params)
+#     trainer.populate()
+#     for i in range(len(trainer.pop)):
+#         if i > 50:
+#             trainer.pop[i].fitness = 1/((i+1)+2)
+#         else:
+#             trainer.pop[i].fitness = 1/(i+1)
+#     sp = Species([])
+#     sp.species_list = trainer.pop
+#     sp.speciete()
