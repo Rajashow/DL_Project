@@ -101,7 +101,7 @@ class Train():
     def _speciate(self):
         n_sep = []
         for sep in self.sep:
-            if should_speciate(sep):
+            if should_speciate(sep.get_fitness()):
                 n_sep.extend(sep.speciate)
             else:
                 n_sep.append(sep)
