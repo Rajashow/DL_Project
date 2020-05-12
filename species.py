@@ -9,6 +9,9 @@ class Species():
         self.mean_fit = 0
         self.species_list = [pop for pop in pops]
 
+        for pop in self.species_list:
+            pop.species = self
+
     def reap(self, p):
         """reaps a percents of the pop based on fitness
 
