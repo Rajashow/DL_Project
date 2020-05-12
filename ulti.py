@@ -28,7 +28,7 @@ def get_split(loss):
 def get_pop_rank(pop): return pop.rank
 
 
-def get_pop_fitness(pop): return pop.fitness
+def get_pop_fitness(pop): return pop.fitness if pop.fitness else -9E10
 
 
 def get_pop_loss(pop): return 1/pop.fitness
