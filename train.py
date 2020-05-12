@@ -105,6 +105,7 @@ class Train():
                 n_sep.extend(sep.speciate)
             else:
                 n_sep.append(sep)
+        self.sep = n_sep
 
     def train(self, x, y, loss, print_fit=False):
         """For each wann perfom a forward pass and get it's fitness
