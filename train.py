@@ -97,6 +97,8 @@ class Train():
             sep.reap(self.hyp["%_reap"])
             self.pop.extend(sep.species_list)
         self.pop.sort(key=get_pop_rank)
+        if len(self.pop) > self.n_pop:
+            self.pop = self.pop[:self.n_pop]
 
     def _speciate(self):
         n_sep = []
@@ -120,9 +122,8 @@ class Train():
         """
         mean_fitnesses = 0
         for pop in self.pop:
-            # y_ = pop.forward(x, self.hyp["w"])
-            pop.fitness = 10
-            # (1/loss(y_, y)).item()
+            y_ = pop.forward(x, self.hyp["w"])
+            pop.fitness = (1/loss(y_, y)).item()
             mean_fitnesses += pop.fitness
 
         mean_fitnesses /= self.n_pop
@@ -215,6 +216,7 @@ if __name__ == "__main__":
     loss = torch.nn.CrossEntropyLoss()
     for i in range(50):
         trainer.iterate(x, y, loss)
+        print(i)
     trainer.populate()
     trainer.pop[0].visualize()
     trainer.plot_fitness()
