@@ -30,7 +30,7 @@ class Train():
         self.hyp = hyper_params
         self._reap_per_gen = int(self.n_pop*self.hyp["%_reap"])
 
-        self._sample_p = np.arange(self.n_pop+1, 0, -1)
+        self._sample_p = 2*np.arange(self.n_pop+1, 0, -1)
 
         self.gen = 0
         self.history = []
@@ -57,7 +57,7 @@ class Train():
             # get the pop of having them
             p = self._sample_p[:n_samples]
             # standardized
-            p /= np.sum(p)
+            p = p / np.sum(p)
             # sample based on the pop with replacement
             sample_idxs = np.random.choice(
                 n_samples, len(self.pop), replace=True, p=p)
@@ -96,7 +96,6 @@ class Train():
         for sep in self.sep:
             sep.reap(self.hyp["%_reap"])
             self.pop.extend(sep.species_list)
-
         self.pop.sort(key=get_pop_rank)
 
     def _speciate(self):
