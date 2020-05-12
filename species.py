@@ -1,5 +1,5 @@
 from wann import wann
-from ulti import get_pop_rank, get_split, get_pop_loss
+from ulti import get_pop_fitness, get_pop_rank, get_split, get_pop_loss
 import bisect
 
 
@@ -22,7 +22,7 @@ class Species():
             self.species_list)-numb_to_reap]
 
     def get_fitness(self):
-        return [get_pop_loss(s) for s in self.species_list]
+        return [get_pop_fitness(s) for s in self.species_list]
 
     def speciete(self):
         """split a species into two based on fitness
