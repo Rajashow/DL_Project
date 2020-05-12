@@ -64,8 +64,7 @@ class Train():
             # create pop
             for index in sample_idxs:
                 self.pop.extend(self.pop[index].mutate(1))
-        self.sep = []
-        self.sep.append(Species(self.pop))
+                self.pop[-1].species.species_list.append(self.pop[-1])
 
     def give_rank(self):
         """
@@ -122,8 +121,9 @@ class Train():
         """
         mean_fitnesses = 0
         for pop in self.pop:
-            y_ = pop.forward(x, self.hyp["w"])
-            pop.fitness = (1/loss(y_, y)).item()
+            # y_ = pop.forward(x, self.hyp["w"])
+            pop.fitness = 10
+            # (1/loss(y_, y)).item()
             mean_fitnesses += pop.fitness
 
         mean_fitnesses /= self.n_pop
@@ -141,6 +141,9 @@ class Train():
         """
         for i in range(len(self.pop)):
             self.pop[i] = self.pop[i].mutate(1)[0]
+
+        self.sep = []
+        self.sep.append(Species(self.pop))
 
     def iterate(self, x, y, loss, init_mutate=100):
         """Primary method used to interface with wanns
