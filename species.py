@@ -27,7 +27,7 @@ class Species():
     def get_fitness(self):
         return [get_pop_fitness(s) for s in self.species_list]
 
-    def speciete(self):
+    def speciate(self):
         """split a species into two based on fitness
 
         Returns:
