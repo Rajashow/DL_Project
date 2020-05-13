@@ -63,7 +63,7 @@ class BasicRes(nn.Module):
             ),
             nn.Sequential(
                 nn.Conv2d(8, 16, 3, stride=2, padding=1),    # D_out = (W_in/2, H_in/2, 12) 
-                nn.BatchNorm2d(16)
+                nn.BatchNorm2d(16),
                 nn.Dropout(p=0.2)
             )
         )
