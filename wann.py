@@ -304,7 +304,7 @@ class wannModel(nn.Module):
             if activation is not None:
                 output[v] = activation(output[v])
             for w in self.wann.g.neighbors(v):
-                output[w] += self.weights[(v, w)](output[v])
+                output[w] = output[w] + self.weights[(v, w)](output[v])
 
         final = torch.cat(tuple(output["o" + str(i)]
                                 for i in range(self.wann.output_dim)), dim=1)
