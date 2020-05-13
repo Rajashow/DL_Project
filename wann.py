@@ -181,11 +181,9 @@ class wann:
         for v, (x, y) in layered_pos.items():
             if isinstance(v, str):
                 if v[0] == 'i':
-                    pos[v] = (min_x, (max_y - min_y) * int(v[1:]) /
-                              (self.input_dim - 1) + min_y)
+                    pos[v] = (min_x, (max_y - min_y) * int(v[1:]) / (self.input_dim - 1) + min_y)
                 else:
-                    pos[v] = (max_x, (max_y - min_y) * int(v[1:]) /
-                              (self.output_dim - 1) + min_y)
+                    pos[v] = (max_x, (max_y - min_y) * int(v[1:]) / (self.output_dim - 1) + min_y)
             else:
                 pos[v] = (-y, x)
 
@@ -257,8 +255,7 @@ class wann:
             w = wann(data["input_dim"], data["output_dim"])
             w.hidden = data["hidden"]
             w.g = json_graph.node_link_graph(data["graph"])
-            w.activations = {v: wann.str_to_act(
-                s) for v, s in data["activations"]}
+            w.activations = {v: wann.str_to_act(s) for v, s in data["activations"].items()}
             return w
 
 
