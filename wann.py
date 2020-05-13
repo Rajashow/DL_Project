@@ -288,6 +288,7 @@ class wannModel(nn.Module):
         Gradients are calculated.
         No shared weight. Weights are stored in self.weights.
         """
+
         assert len(x.shape) == 2 and x.shape[1] == self.wann.input_dim
         device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
