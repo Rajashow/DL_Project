@@ -181,9 +181,11 @@ class wann:
         for v, (x, y) in layered_pos.items():
             if isinstance(v, str):
                 if v[0] == 'i':
-                    pos[v] = (min_x, (max_y - min_y) * int(v[1:]) / (self.input_dim - 1) + min_y)
+                    pos[v] = (min_x, (max_y - min_y) * int(v[1:]) /
+                              (self.input_dim - 1) + min_y)
                 else:
-                    pos[v] = (max_x, (max_y - min_y) * int(v[1:]) / (self.output_dim - 1) + min_y)
+                    pos[v] = (max_x, (max_y - min_y) * int(v[1:]) /
+                              (self.output_dim - 1) + min_y)
             else:
                 pos[v] = (-y, x)
 
@@ -255,7 +257,8 @@ class wann:
             w = wann(data["input_dim"], data["output_dim"])
             w.hidden = data["hidden"]
             w.g = json_graph.node_link_graph(data["graph"])
-            w.activations = {v: wann.str_to_act(s) for v, s in data["activations"].items()}
+            w.activations = {v: wann.str_to_act(
+                s) for v, s in data["activations"].items()}
             return w
 
 
@@ -288,12 +291,13 @@ class wannModel(nn.Module):
         assert len(x.shape) == 2 and x.shape[1] == self.wann.input_dim
         device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
-        output = {i: torch.zeros(x.shape[0], 1, device=device)
+        output = {i: torch.zeros(x.shape[0], 1, device=device, requires_grad=True)
                   for i in range(self.wann.hidden)}
         for i in range(self.wann.input_dim):
             output["i" + str(i)] = x[:, i:i + 1]
         for i in range(self.wann.output_dim):
-            output["o" + str(i)] = torch.zeros(x.shape[0], 1, device=device)
+            output["o" + str(i)] = torch.zeros(x.shape[0], 1,
+                                               device=device, requires_grad=True)
 
         for v in self.top_sort:
             activation = self.wann.activations[v]
