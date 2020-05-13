@@ -9,7 +9,7 @@ import torch
 wann_class = wann
 
 hyper_params = {"p_weighed_rank": .5, "w": -2, "%_reap": .5}
-class_args = {"input_dim": (784), "output_dim": 6}
+class_args = {"input_dim": (784), "output_dim": 18}
 trainer = Train(wann_class, class_args, 100, hyper_params)
 
 train_dataset = SketchDataSet("./data/", is_train=True)
