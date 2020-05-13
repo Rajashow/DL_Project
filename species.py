@@ -39,7 +39,7 @@ class Species():
         split = bisect.bisect(fitness, bounds[1])
 
         new_Species = Species([])
-        split = split if len(fitness) != split and split  else split//2
+        split = split if len(fitness) != split and split else len(fitness)//2
 
         new_Species.species_list = self.species_list[:split]
         self.species_list = self.species_list[split:]

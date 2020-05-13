@@ -157,7 +157,7 @@ class Train():
         if not self.pop:
             print("Creating new population")
             self.populate()
-            for _ in range(1):
+            for _ in range(100):
                 self._self_mutate()
             print("Done creating a population")
         else:

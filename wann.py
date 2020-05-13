@@ -267,12 +267,11 @@ class wannModel(nn.Module):
         super(wannModel, self).__init__()
         self.wann = wann.copy()
         if torch.cuda.is_available():
-            self.weights = {edge: nn.Parameter(
-                nn.Linear(1, 1).cuda(), requires_grad=True) for edge in nx.edges(self.wann.g)}
+            self.weights = {edge: nn.Linear(1, 1).cuda()
+                            for edge in nx.edges(self.wann.g)}
         else:
-            self.weights = {edge: nn.Parameter(
-                nn.Linear(1, 1), requires_grad=True)
-                for edge in nx.edges(self.wann.g)}
+            self.weights = {edge: nn.Linear(1, 1)
+                            for edge in nx.edges(self.wann.g)}
         self.top_sort = topological_sort(self.wann.g)
         # add the parameters for the model
         for name in self.weights:
