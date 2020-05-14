@@ -269,7 +269,7 @@ def get_tensor_mask(g, nodes, init_weight=1):
 
     mask = nx.to_numpy_matrix(g, nodes)[:-1, -1]
     mask = init_weight*(mask*mask.T)
-    return torch.from_numpy(mask).float()+random.rand(mask.size())
+    return torch.from_numpy(mask).float()+torch.rand(mask.size())
 
 
 class wannModel(nn.Module):
@@ -297,6 +297,7 @@ class wannModel(nn.Module):
 
         for i, v in enumerate(self.weights):
             self.add_module(f"{i}th_layer", v)
+
         self.output_layer = nn.Linear(
             self.wann.input_dim, self.wann.output_dim)
 
