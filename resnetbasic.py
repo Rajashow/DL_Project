@@ -7,7 +7,7 @@ class BasicRes(nn.Module):
     def __init__(self, n_class):
         super(BasicRes, self).__init__()
         self.block1 = nn.Sequential(
-            nn.Dropout(p=0.2),
+            nn.Dropout(p=0.4),
             nn.Sequential(
                 nn.Conv2d(1, 1, 7),
                 nn.BatchNorm2d(1)
@@ -25,7 +25,7 @@ class BasicRes(nn.Module):
             nn.Sequential(
                 nn.Conv2d(1, 2, 3, stride=2, padding=1),    # D_out = (W_in/2, H_in/2, 2)
                 nn.BatchNorm2d(2),
-                nn.Dropout(p=0.2)
+                nn.Dropout(p=0.4)
             ),
             nn.Sequential(
                 nn.Conv2d(2, 2, 3, padding=1),  # D_in = (W_in, H_in, 2) = D_out
@@ -38,7 +38,7 @@ class BasicRes(nn.Module):
             nn.Sequential(
                 nn.Conv2d(2, 4, 3, stride=2, padding=1),    # D_out = (W_in/2, H_in/2, 4)
                 nn.BatchNorm2d(4),
-                nn.Dropout(p=0.2)
+                nn.Dropout(p=0.4)
             ),
             nn.Sequential(
                 nn.Conv2d(4, 4, 3, padding=1),  # D_in = D_out
@@ -51,7 +51,7 @@ class BasicRes(nn.Module):
             nn.Sequential(
                 nn.Conv2d(4, 8, 3, stride=2, padding=1),    # D_out = (W_in/2, H_in/2, 8) 
                 nn.BatchNorm2d(8),
-                nn.Dropout(p=0.2)
+                nn.Dropout(p=0.4)
             ),
             nn.Sequential(
                 nn.Conv2d(8, 8, 3, padding=1),  # D_in = D_out
@@ -64,7 +64,7 @@ class BasicRes(nn.Module):
             nn.Sequential(
                 nn.Conv2d(8, 16, 3, stride=2, padding=1),    # D_out = (W_in/2, H_in/2, 12) 
                 nn.BatchNorm2d(16),
-                nn.Dropout(p=0.2)
+                nn.Dropout(p=0.4)
             )
         )
         self.fc = nn.Linear(16*2*2, n_class)
