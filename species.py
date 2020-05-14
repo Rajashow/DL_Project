@@ -1,4 +1,4 @@
-from ulti import get_pop_fitness, get_pop_rank, get_split, get_pop_loss
+from utils import get_pop_fitness, get_pop_rank, get_split, get_pop_loss
 import bisect
 
 
