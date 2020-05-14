@@ -299,21 +299,17 @@ class wannModel(nn.Module):
                 linear.weight.data.fill_(init_weight)
                 linear.bias.data.fill_(0)
 
-        self.concat_inputs = []
-        for val in self.weights:
-            self.concat_inputs.append(
-                nn.Sequential(self.start_node, val, nn.ReLU()))
-
-        for i, v in enumerate(self.concat_inputs):
+        for i, v in enumerate(self.weights):
             self.add_module(f"{i}th_layer", v)
         self.output_layer = nn.Linear(
             self.wann.input_dim, self.wann.output_dim)
 
     def forward(self, x):
         x = self.start_node(x)
-        x_ = None
-        for layer in self.concat_inputs:
-            x_ = layer(x)
+        x_ = x.clone()
+        for layer in self.weights:
+            x_ = layer(x_)
+            x_ = F.relu(x_)
             x_ = x_ + x
         x_ = self.middle_node(x_)
         x_ = F.relu(x_)
