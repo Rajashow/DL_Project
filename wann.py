@@ -283,8 +283,8 @@ class wannModel(nn.Module):
         self.weights = []
 
         for v in self.top_sort:
-            if "i" not in v and "o" not in v:
-                nodes = [f"i{i}" for i in range(self.wann.input_dim)]
+            nodes = [f"i{i}" for i in range(self.wann.input_dim)]
+            if v not in nodes:
                 nodes.append(v)
                 self.weights.append(CustomizedLinear(
                     get_tensor_mask(self.wann.g, nodes)))
