@@ -308,36 +308,4 @@ class wannModel(nn.Module):
             x_ = F.relu(x_)
             x_ = x_ + x
         x_ = self.output_layer(x_)
-        return F.softmax(x_, dim=1)
-
-    # def forward(self, x):
-    #     """
-    #     Forward pass.
-    #     Gradients are calculated.
-    #     No shared weight. Weights are stored in self.weights.
-    #     """
-
-    #     assert len(x.shape) == 2 and x.shape[1] == self.wann.input_dim
-
-    #     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-
-    #     output = {i: torch.zeros(*x.shape[0], 1, device=device, requires_grad=True)
-    #               for i in range(self.wann.hidden)}
-    #     # output = torch.zeros(
-    #     #     (net.wann.hidden, images.shape[0], 1), device=device, requires_grad=True)
-
-    #     # output_i = x.transpose(0, 1).unsqueeze_(-1)
-    #     for i in range(self.wann.input_dim):
-    #         output["i" + str(i)] = x[:, i:i + 1]
-    #     for i in range(self.wann.output_dim):
-    #         output["o" + str(i)] = torch.zeros(x.shape[0], 1,
-    #                                            device=device, requires_grad=True)
-
-    #     for v in self.top_sort:
-    #         output[v] = self.wann.activations[v](output[v])
-    #         for w in self.wann.g.neighbors(v):
-    #             output[w] = output[w] + self.weights[(v, w)](output[v])
-
-    #     final = torch.cat(tuple(output["o" + str(i)]
-    #                             for i in range(self.wann.output_dim)), dim=1)
-    #     return F.softmax(final, dim=1)
+        return x_
