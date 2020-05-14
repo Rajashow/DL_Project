@@ -309,4 +309,4 @@ class wannModel(nn.Module):
             x_ = F.relu(x_)
             x_ = x_ + x
         x_ = self.output_layer(x_)
-        return x_
+        return F.softmax(x_, dim=1)
