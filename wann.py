@@ -281,6 +281,8 @@ class wannModel(nn.Module):
             for linear in self.weights.values():
                 linear.weight.data.fill_(init_weight)
                 linear.bias.data.fill_(0)
+        for v in self.top_sort:
+            self.wann.activations[v] = F.linear
 
     def forward(self, x):
         """
@@ -290,10 +292,15 @@ class wannModel(nn.Module):
         """
 
         assert len(x.shape) == 2 and x.shape[1] == self.wann.input_dim
+
         device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
-        output = {i: torch.zeros(x.shape[0], 1, device=device, requires_grad=True)
+        output = {i: torch.zeros(*x.shape[0], 1, device=device, requires_grad=True)
                   for i in range(self.wann.hidden)}
+        # output = torch.zeros(
+        #     (net.wann.hidden, images.shape[0], 1), device=device, requires_grad=True)
+
+        # output_i = x.transpose(0, 1).unsqueeze_(-1)
         for i in range(self.wann.input_dim):
             output["i" + str(i)] = x[:, i:i + 1]
         for i in range(self.wann.output_dim):
@@ -302,8 +309,8 @@ class wannModel(nn.Module):
 
         for v in self.top_sort:
             activation = self.wann.activations[v]
-            if activation is not None:
-                output[v] = activation(output[v])
+            # if activation is not None:
+            output[v] = activation(output[v])
             for w in self.wann.g.neighbors(v):
                 output[w] = output[w] + self.weights[(v, w)](output[v])
 

@@ -1,10 +1,6 @@
-import numpy as np
-
 import jenkspy
-
 import functools
 import operator
-
 from unidip import UniDip
 
 

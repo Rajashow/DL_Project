@@ -1,4 +1,4 @@
-from ulti import get_pop_rank, functools_reduce_iconcat, should_speciate
+from utils import get_pop_rank, functools_reduce_iconcat, should_speciate
 from species import Species
 from wann import wann
 import numpy as np
