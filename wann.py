@@ -289,7 +289,7 @@ class wannModel(nn.Module):
                 self.weights.append(CustomizedLinear(
                     get_tensor_mask(self.wann.g, nodes)))
 
-        for param in start_node.parameters():
+        for param in self.start_node.parameters():
             param.requires_grad = False
 
         # add the parameters for the model
@@ -302,7 +302,7 @@ class wannModel(nn.Module):
         self.concat_inputs = []
         for val in self.weights:
             self.concat_inputs.append(
-                nn.Sequential(start_node, val, nn.ReLU()))
+                nn.Sequential(self.start_node, val, nn.ReLU()))
 
         for i, v in enumerate(self.concat_inputs):
             self.add_module(f"{i}th_layer", v)
@@ -315,7 +315,7 @@ class wannModel(nn.Module):
         for layer in self.concat_inputs:
             x_ = layer(x)
             x_ = x_ + x
-        x_ = output_layer(x)
+        x_ = self.output_layer(x)
         return F.softmax(x_, dim=1)
 
     # def forward(self, x):
