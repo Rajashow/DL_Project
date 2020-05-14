@@ -283,7 +283,7 @@ class wannModel(nn.Module):
         self.weights = []
 
         for v in self.top_sort:
-            if "i" not in v or "o" not in v:
+            if "i" not in v and "o" not in v:
                 nodes = [f"i{i}" for i in range(self.wann.input_dim)]
                 nodes.append(v)
                 self.weights.append(CustomizedLinear(
