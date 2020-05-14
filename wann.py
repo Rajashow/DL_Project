@@ -3,11 +3,14 @@ import networkx as nx
 import matplotlib.pyplot as plt
 import random
 import torch
+from torch import softmax
 import torch.nn as nn
 import torch.nn.functional as F
 
 from networkx.algorithms.dag import topological_sort
 from networkx.readwrite import json_graph
+
+from CustomizedLinear import CustomizedLinear
 
 
 class wann:
@@ -262,58 +265,87 @@ class wann:
             return w
 
 
+def get_tensor_mask(g, nodes):
+
+    mask = nx.to_numpy_matrix(g, nodes)[:-1, -1]
+    mask = mask*mask.T
+    return torch.from_numpy(mask).float()+torch.rand(mask.shape)
+
+
 class wannModel(nn.Module):
     def __init__(self, wann, init_weight=None):
         super(wannModel, self).__init__()
         self.wann = wann.copy()
-        if torch.cuda.is_available():
-            self.weights = {edge: nn.Linear(1, 1).cuda()
-                            for edge in nx.edges(self.wann.g)}
-        else:
-            self.weights = {edge: nn.Linear(1, 1)
-                            for edge in nx.edges(self.wann.g)}
+
         self.top_sort = topological_sort(self.wann.g)
+
+        start_node = nn.Linear(wann.input_dim, wann.input_dim)
+        self.weights = []
+
+        for v in self.top_sort:
+            if "i" not in v or "o" not in v:
+                nodes = [f"i{i}" for i in range(self.wann.input_dim)]
+                nodes.append(v)
+                self.weights.append(CustomizedLinear(
+                    get_tensor_mask(self.wann.g, nodes)))
+
+        for param in start_node.parameters():
+            param.requires_grad = False
+
         # add the parameters for the model
-        for name in self.weights:
-            self.add_module(str(name), self.weights[name])
 
         if init_weight is not None:
-            for linear in self.weights.values():
+            for linear in self.weights:
                 linear.weight.data.fill_(init_weight)
                 linear.bias.data.fill_(0)
-        for v in self.top_sort:
-            self.wann.activations[v] = F.linear
+
+        self.concat_inputs = []
+        for val in self.weights:
+            self.concat_inputs.append(
+                nn.Sequential(start_node, val, nn.ReLU()))
+
+        for i, v in enumerate(self.concat_inputs):
+            self.add_module(f"{i}th_layer", v)
+        self.output_layer = nn.Linear(
+            self.wann.input_dim, self.wann.output_dim)
 
     def forward(self, x):
-        """
-        Forward pass.
-        Gradients are calculated.
-        No shared weight. Weights are stored in self.weights.
-        """
+        x = self.start_node(x)
+        x_ = None
+        for layer in self.concat_inputs:
+            x_ = layer(x)
+            x_ = x_ + x
+        x_ = output_layer(x)
+        return F.softmax(x_, dim=1)
 
-        assert len(x.shape) == 2 and x.shape[1] == self.wann.input_dim
+    # def forward(self, x):
+    #     """
+    #     Forward pass.
+    #     Gradients are calculated.
+    #     No shared weight. Weights are stored in self.weights.
+    #     """
 
-        device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    #     assert len(x.shape) == 2 and x.shape[1] == self.wann.input_dim
 
-        output = {i: torch.zeros(*x.shape[0], 1, device=device, requires_grad=True)
-                  for i in range(self.wann.hidden)}
-        # output = torch.zeros(
-        #     (net.wann.hidden, images.shape[0], 1), device=device, requires_grad=True)
+    #     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
-        # output_i = x.transpose(0, 1).unsqueeze_(-1)
-        for i in range(self.wann.input_dim):
-            output["i" + str(i)] = x[:, i:i + 1]
-        for i in range(self.wann.output_dim):
-            output["o" + str(i)] = torch.zeros(x.shape[0], 1,
-                                               device=device, requires_grad=True)
+    #     output = {i: torch.zeros(*x.shape[0], 1, device=device, requires_grad=True)
+    #               for i in range(self.wann.hidden)}
+    #     # output = torch.zeros(
+    #     #     (net.wann.hidden, images.shape[0], 1), device=device, requires_grad=True)
 
-        for v in self.top_sort:
-            activation = self.wann.activations[v]
-            # if activation is not None:
-            output[v] = activation(output[v])
-            for w in self.wann.g.neighbors(v):
-                output[w] = output[w] + self.weights[(v, w)](output[v])
+    #     # output_i = x.transpose(0, 1).unsqueeze_(-1)
+    #     for i in range(self.wann.input_dim):
+    #         output["i" + str(i)] = x[:, i:i + 1]
+    #     for i in range(self.wann.output_dim):
+    #         output["o" + str(i)] = torch.zeros(x.shape[0], 1,
+    #                                            device=device, requires_grad=True)
 
-        final = torch.cat(tuple(output["o" + str(i)]
-                                for i in range(self.wann.output_dim)), dim=1)
-        return F.softmax(final, dim=1)
+    #     for v in self.top_sort:
+    #         output[v] = self.wann.activations[v](output[v])
+    #         for w in self.wann.g.neighbors(v):
+    #             output[w] = output[w] + self.weights[(v, w)](output[v])
+
+    #     final = torch.cat(tuple(output["o" + str(i)]
+    #                             for i in range(self.wann.output_dim)), dim=1)
+    #     return F.softmax(final, dim=1)
