@@ -279,7 +279,7 @@ class wannModel(nn.Module):
 
         self.top_sort = topological_sort(self.wann.g)
 
-        start_node = nn.Linear(wann.input_dim, wann.input_dim)
+        self.start_node = nn.Linear(wann.input_dim, wann.input_dim)
         self.weights = []
 
         for v in self.top_sort:
