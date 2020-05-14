@@ -281,7 +281,7 @@ class wannModel(nn.Module):
 
         self.start_node = nn.Linear(wann.input_dim, wann.input_dim)
         self.weights = []
-
+        self.middle_node = nn.Linear(wann.input_dim, wann.input_dim)
         for v in self.top_sort:
             nodes = [f"i{i}" for i in range(self.wann.input_dim)]
             if v not in nodes:
@@ -289,8 +289,8 @@ class wannModel(nn.Module):
                 self.weights.append(CustomizedLinear(
                     get_tensor_mask(self.wann.g, nodes)))
 
-        for param in self.start_node.parameters():
-            param.requires_grad = False
+        # for param in self.start_node.parameters():
+        #     param.requires_grad = False
 
         # add the parameters for the model
 
@@ -315,6 +315,8 @@ class wannModel(nn.Module):
         for layer in self.concat_inputs:
             x_ = layer(x)
             x_ = x_ + x
+        x_ = self.middle_node(x_)
+        x_ = F.relu(x_)
         x_ = self.output_layer(x)
         return F.softmax(x_, dim=1)
 
