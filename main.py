@@ -31,6 +31,7 @@ def train(train_loader, test_loader, learning_rate, num_epochs, experiment_name,
     
     prev_test_loss = 0.0
     test_loss = 0.0
+    stagnant_loss = False
     for epoch in range(num_epochs):
         net.train()
         
@@ -38,6 +39,9 @@ def train(train_loader, test_loader, learning_rate, num_epochs, experiment_name,
         if inc_learning:
             learning_rate += lr_increment
 
+        if stagnant_loss:
+            stagnant_loss = False
+            learning_rate /= 2 
 
         for param_group in optimizer.param_groups:
             param_group['lr'] = learning_rate
@@ -74,6 +78,10 @@ def train(train_loader, test_loader, learning_rate, num_epochs, experiment_name,
             test_loss /= len(test_loader)
         
         print('test loss: {}'.format(test_loss))
+
+        if (abs(test_loss - prev_test_loss) < 0.3 and prev_test_loss != 0.0) or \
+            (test_loss - prev_test_loss > 0.2 and prev_test_loss != 0.0):
+            stagnant_loss = True
 
         # Save models
         if best_test_loss > test_loss:
