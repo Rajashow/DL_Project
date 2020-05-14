@@ -265,11 +265,11 @@ class wann:
             return w
 
 
-def get_tensor_mask(g, nodes):
+def get_tensor_mask(g, nodes, init_weight=1):
 
     mask = nx.to_numpy_matrix(g, nodes)[:-1, -1]
-    mask = mask*mask.T
-    return torch.from_numpy(mask).float()+.5*torch.rand(mask.shape)
+    mask = init_weight*(mask*mask.T)
+    return torch.from_numpy(mask).float()+random.rand(mask.size())
 
 
 class wannModel(nn.Module):
@@ -290,12 +290,6 @@ class wannModel(nn.Module):
                 self.weights.append(CustomizedLinear(
                     get_tensor_mask(self.wann.g, nodes)))
 
-        self.post_child_node = nn.Linear(wann.input_dim, wann.input_dim)
-        # for param in self.start_node.parameters():
-        #     param.requires_grad = False
-
-        # add the parameters for the model
-
         if init_weight is not None:
             for linear in self.weights:
                 linear.weight.data.fill_(init_weight)
@@ -308,14 +302,12 @@ class wannModel(nn.Module):
 
     def forward(self, x):
         x = self.start_node(x)
-        x_ = x.clone()
+        x_ = x
         for layer in self.weights:
             x_ = layer(x_)
             x_ = F.relu(x_)
             x_ = x_ + x
-        x_ = self.post_child_node(x)
-        x_ = F.relu(x_)
-        x_ = self.output_layer(x)
+        x_ = self.output_layer(x_)
         return F.softmax(x_, dim=1)
 
     # def forward(self, x):
