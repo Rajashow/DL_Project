@@ -14,81 +14,25 @@ from sketchdataset import SketchDataSet
 # Global variables
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
-def train(train_loader, test_loader, learning_rate, num_epochs, experiment_name, 
+def test(train_loader, test_loader, learning_rate, num_epochs, experiment_name, 
             momentum, weight_decay, inc_learning, upper_lr, n_classes):
     net = BasicRes(n_classes).to(device)
-    criterion = nn.CrossEntropyLoss()
-    optimizer = torch.optim.SGD(net.parameters(), lr=learning_rate, momentum=momentum, weight_decay=weight_decay)
-
-    # Record best test loss
-    best_test_loss = np.inf
+    net.load_state_dict(torch.load('./' + experiment_name + '_best_detector.pth'))
     
-    # Update learning rate?
-    # Set to False if you want no updates to the learning rate
-    if inc_learning:
-        lr_increment = (upper_lr-learning_rate)/num_epochs
-
-    
-    prev_test_loss = 0.0
-    test_loss = 0.0
-    stagnant_loss = False
-    for epoch in range(num_epochs):
-        net.train()
-        
-        # Update learning rate
-        if inc_learning:
-            learning_rate += lr_increment
-
-        if stagnant_loss:
-            stagnant_loss = False
-            learning_rate /= 2 
-
-        for param_group in optimizer.param_groups:
-            param_group['lr'] = learning_rate
-        
-        print('\n\nStarting epoch %d / %d' % (epoch + 1, num_epochs))
-        print('Learning Rate for this epoch: {}'.format(learning_rate))
-        
-        total_loss = 0.
-        for i, (images, target) in enumerate(train_loader):
+    # evaluate the network on the test data
+    tot = 0
+    correct = 0
+    with torch.no_grad():
+        net.eval()
+        for i, (images, target) in enumerate(test_loader):
             images, target = images.to(device), target.to(device)
-            
             pred = net(images)
-            loss = criterion(pred,target)
-            total_loss += loss.item()
-            
-            optimizer.zero_grad()
-            loss.backward()
-            optimizer.step()
-            if (i+1) % 10000 == 0:
-                print('Epoch [%d/%d], Iter [%d/%d] Loss: %.4f, average_loss: %.4f'
-                      % (epoch+1, num_epochs, i+1, len(train_loader), loss.item(), total_loss / (i+1)))
+            _, pred_class = torch.max(pred, 1)
+            tot += target.size(0)
+            correct += (pred_class == target).sum().item()
 
-        # evaluate the network on the test data
-        with torch.no_grad():
-            prev_test_loss = test_loss
-            test_loss = 0.0
-            net.eval()
-            for i, (images, target) in enumerate(test_loader):
-                images, target = images.to(device), target.to(device)
-
-                pred = net(images)
-                loss = criterion(pred,target)
-                test_loss += loss.item()
-            test_loss /= len(test_loader)
-        
-        print('test loss: {}'.format(test_loss))
-
-        if (abs(test_loss - prev_test_loss) < 0.3 and prev_test_loss != 0.0) or \
-            (test_loss - prev_test_loss > 0.2 and prev_test_loss != 0.0):
-            stagnant_loss = True
-
-        # Save models
-        if best_test_loss > test_loss:
-            best_test_loss = test_loss
-            print('Updating best test loss: %.5f' % best_test_loss)
-            torch.save(net.state_dict(),'{}_best_detector.pth'.format(experiment_name) if len(experiment_name) else 'best_detector.pth' )
-        torch.save(net.state_dict(),'{}_detector.pth'.format(experiment_name) if len(experiment_name) else 'detector.pth')
+    
+    print('Accuracy: {}'.format(100 * correct/tot))
 
 def get_parser():
     parser = argparse.ArgumentParser(description='Resnet training')
@@ -143,7 +87,7 @@ def main():
     test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False, num_workers=4)
     print('Loaded %d test images' % len(test_dataset))
 
-    train(train_loader, test_loader, learning_rate, num_epochs, experiment_name, 
+    test(train_loader, test_loader, learning_rate, num_epochs, experiment_name, 
             momentum, weight_decay, inc_learning, upper_lr, train_dataset.num_of_classes())
 
 if __name__ == '__main__':
