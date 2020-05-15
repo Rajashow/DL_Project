@@ -3,13 +3,13 @@ import networkx as nx
 import matplotlib.pyplot as plt
 import random
 import torch
-from torch import softmax
 import torch.nn as nn
 import torch.nn.functional as F
-from utils import get_tensor_mask
+
 from networkx.algorithms.dag import topological_sort
 from networkx.readwrite import json_graph
 from torch import softmax
+from utils import get_tensor_mask
 from CustomizedLinear import CustomizedLinear
 
 from CustomizedLinear import CustomizedLinear
