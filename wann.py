@@ -273,17 +273,15 @@ def get_tensor_mask(g, nodes, init_weight=1):
 
 
 class wannModel(nn.Module):
-    def __init__(self, wann, init_weight=None):
+    def __init__(self, wann,):
         super(wannModel, self).__init__()
         self.wann = wann.copy()
 
         self.top_sort = topological_sort(self.wann.g)
 
         self.start_node = nn.Linear(wann.input_dim, wann.input_dim)
-        self.weights = []
-        self.middle_node = nn.Linear(wann.input_dim, wann.input_dim)
+        self.weights = nn.ModuleList()
 
-        # nn.ModuleList(
         for v in self.top_sort:
             nodes = [f"i{i}" for i in range(self.wann.input_dim)]
             if v not in nodes:
@@ -291,13 +289,6 @@ class wannModel(nn.Module):
                 self.weights.append(CustomizedLinear(
                     get_tensor_mask(self.wann.g, nodes)))
 
-        if init_weight is not None:
-            for linear in self.weights:
-                linear.weight.data.fill_(init_weight)
-                linear.bias.data.fill_(0)
-
-        for i, v in enumerate(self.weights):
-            self.add_module(f"{i}th_layer", v)
         self.output_layer = nn.Linear(
             self.wann.input_dim, self.wann.output_dim)
 

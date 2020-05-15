@@ -5,6 +5,14 @@ from unidip import UniDip
 
 
 def should_speciate(loss):
+    """Given a list of values uses the dip test to see if their is a biomodel distribution warrent a spilt
+
+    Arguments:
+        loss {list} -- list of losses
+
+    Returns:
+        bool -- should you spilt the losses
+    """
     if len(loss) <= 2:
         return False
     intervals = UniDip(loss).run()
@@ -42,7 +50,3 @@ def functools_reduce_iconcat(a):
         list -- flattend list
     """
     return functools.reduce(operator.iconcat, a, [])
-
-
-if __name__ == "__main__":
-    pass

@@ -145,7 +145,7 @@ class Train():
         self.sep = []
         self.sep.append(Species(self.pop))
 
-    def iterate(self, x, y, loss, init_mutate=100):
+    def iterate(self, x, y, loss, init_mutate=1_000_000):
         """Primary method used to interface with wanns
 
         Arguments:
@@ -157,7 +157,7 @@ class Train():
         if not self.pop:
             print("Creating new population")
             self.populate()
-            for _ in range(100):
+            for _ in range(init_mutate):
                 self._self_mutate()
             print("Done creating a population")
         else:

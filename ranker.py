@@ -146,6 +146,14 @@ def get_crowding_dist(obj_vector):
 
 
 def rank_array(obj):
+    """rank an array based of the first objective
+
+    Arguments:
+        obj {list} -- list of objective
+
+    Returns:
+        list -- list of ranks
+    """
     tmp = np.argsort(obj)
     rank = np.empty_like(tmp)
     rank[tmp] = np.arange(len(obj))
