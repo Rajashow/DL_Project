@@ -1,3 +1,5 @@
+import networkx as nx
+import torch
 import jenkspy
 import functools
 import operator
@@ -50,3 +52,10 @@ def functools_reduce_iconcat(a):
         list -- flattend list
     """
     return functools.reduce(operator.iconcat, a, [])
+
+
+def get_tensor_mask(g, nodes, init_weight=1):
+
+    mask = nx.to_numpy_matrix(g, nodes)[:-1, -1]
+    mask = init_weight*(mask*mask.T)
+    return torch.from_numpy(mask).float()
