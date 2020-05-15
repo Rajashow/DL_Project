@@ -8,6 +8,8 @@ import torch.nn.functional as F
 
 from networkx.algorithms.dag import topological_sort
 from networkx.readwrite import json_graph
+from torch import softmax
+from CustomizedLinear import CustomizedLinear
 
 
 class wann:
@@ -158,8 +160,8 @@ class wann:
 
     def visualize(self, arg_kwargs=None):
         """
-      Creates diagram of WANN.
-      """
+        Creates diagram of WANN.
+        """
         arg_kwargs = arg_kwargs or {}
 
         # position map
@@ -236,8 +238,8 @@ class wann:
     @staticmethod
     def save_json(wann, filename):
         """
-      Saves WANN as a json file.
-      """
+        Saves WANN as a json file.
+        """
         with open(filename + ".json", "w") as wann_file:
             json.dump({
                 "input_dim": wann.input_dim,
@@ -250,62 +252,52 @@ class wann:
     @staticmethod
     def load_json(filename):
         """
-      Returns a WANN from a json file.
-      """
+        Returns a WANN from a json file.
+        """
         with open(filename + ".json", "r") as wann_file:
             data = json.load(wann_file)
             w = wann(data["input_dim"], data["output_dim"])
             w.hidden = data["hidden"]
             w.g = json_graph.node_link_graph(data["graph"])
-            w.activations = {v: wann.str_to_act(
-                s) for v, s in data["activations"].items()}
+            for v, s in data["activations"].items():
+              if v[0] != "i" and v[0] != "o":
+                w.activations[int(v)] = wann.str_to_act(s)
             return w
 
 
+def get_tensor_mask(g, nodes, init_weight=1):
+
+    mask = nx.to_numpy_matrix(g, nodes)[:-1, -1]
+    mask = init_weight*(mask*mask.T)
+    return torch.from_numpy(mask).float()
+
+
 class wannModel(nn.Module):
-    def __init__(self, wann, init_weight=None):
+    def __init__(self, wann,):
         super(wannModel, self).__init__()
         self.wann = wann.copy()
-        if torch.cuda.is_available():
-            self.weights = {edge: nn.Linear(1, 1).cuda()
-                            for edge in nx.edges(self.wann.g)}
-        else:
-            self.weights = {edge: nn.Linear(1, 1)
-                            for edge in nx.edges(self.wann.g)}
+
         self.top_sort = topological_sort(self.wann.g)
-        # add the parameters for the model
-        for name in self.weights:
-            self.add_module(str(name), self.weights[name])
 
-        if init_weight is not None:
-            for linear in self.weights.values():
-                linear.weight.data.fill_(init_weight)
-                linear.bias.data.fill_(0)
-
-    def forward(self, x):
-        """
-        Forward pass.
-        Gradients are calculated.
-        No shared weight. Weights are stored in self.weights.
-        """
-        assert len(x.shape) == 2 and x.shape[1] == self.wann.input_dim
-        device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-
-        output = {i: torch.zeros(x.shape[0], 1, device=device, requires_grad=True)
-                  for i in range(self.wann.hidden)}
-        for i in range(self.wann.input_dim):
-            output["i" + str(i)] = x[:, i:i + 1]
-        for i in range(self.wann.output_dim):
-            output["o" + str(i)] = torch.zeros(x.shape[0], 1,
-                                               device=device, requires_grad=True)
+        self.start_node = nn.Linear(wann.input_dim, wann.input_dim)
+        self.weights = nn.ModuleList()
 
         for v in self.top_sort:
-            activation = self.wann.activations[v]
-            if activation is not None:
-                output[v] = activation(output[v])
-            for w in self.wann.g.neighbors(v):
-                output[w] = output[w] + self.weights[(v, w)](output[v])
+            nodes = [f"i{i}" for i in range(self.wann.input_dim)]
+            if v not in nodes:
+                nodes.append(v)
+                self.weights.append(CustomizedLinear(
+                    get_tensor_mask(self.wann.g, nodes)))
 
-        final = torch.cat(tuple(output["o" + str(i)]
-                                for i in range(self.wann.output_dim)), dim=1)
-        return F.softmax(final, dim=1)
+        self.output_layer = nn.Linear(
+            self.wann.input_dim, self.wann.output_dim)
+
+    def forward(self, x):
+        x = self.start_node(x)
+        x_ = x
+        for layer in self.weights:
+            x_ = layer(x_)
+            x_ = F.relu(x_)
+            x_ = x_ + x
+        x_ = self.output_layer(x_)
+        return F.softmax(x_, dim=1)
