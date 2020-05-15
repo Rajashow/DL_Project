@@ -1,17 +1,24 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-extended torch.nn module which cusmize connection.
+Modified code from
+https://github.com/uchida-takumi/CustomizedLinear/blob/master/CustomizedLinear.py
+"""
+"""
+extended torch.nn module which customize connection.
 
 This code base on https://pytorch.org/docs/stable/notes/extending.html
 """
-import math
-import torch
-import torch.nn as nn
 
 #################################
 # Define custome autograd function for masked connection.
 
+
+
+
+import math
+import torch
+import torch.nn as nn
 class CustomizedLinearFunction(torch.autograd.Function):
     """
     autograd function which masks it's weights by 'mask'.
@@ -52,7 +59,7 @@ class CustomizedLinearFunction(torch.autograd.Function):
             if mask is not None:
                 # change grad_weight to 0 where mask == 0
                 grad_weight = grad_weight * mask
-        #if bias is not None and ctx.needs_input_grad[2]:
+        # if bias is not None and ctx.needs_input_grad[2]:
         if ctx.needs_input_grad[2]:
             grad_bias = grad_output.sum(0).squeeze(0)
 
@@ -64,7 +71,7 @@ class CustomizedLinear(nn.Module):
         """
         extended torch.nn module which mask connection.
 
-        Argumens
+        Arguments
         ------------------
         mask [torch.tensor]:
             the shape is (n_input_feature, n_output_feature).
@@ -90,7 +97,8 @@ class CustomizedLinear(nn.Module):
         # won't be converted when e.g. .cuda() is called. You can use
         # .register_buffer() to register buffers.
         # nn.Parameters require gradients by default.
-        self.weight = nn.Parameter(torch.Tensor(self.output_features, self.input_features))
+        self.weight = nn.Parameter(torch.Tensor(
+            self.output_features, self.input_features))
 
         if bias:
             self.bias = nn.Parameter(torch.Tensor(self.output_features))
@@ -109,7 +117,6 @@ class CustomizedLinear(nn.Module):
         if self.bias is not None:
             self.bias.data.uniform_(-stdv, stdv)
 
-
     def forward(self, input):
         # See the autograd section for explanation of what happens here.
         return CustomizedLinearFunction.apply(input, self.weight, self.bias, self.mask)
@@ -122,9 +129,6 @@ class CustomizedLinear(nn.Module):
         )
 
 
-
-
-
 if __name__ == 'check grad':
     from torch.autograd import gradcheck
 
@@ -135,10 +139,10 @@ if __name__ == 'check grad':
     customlinear = CustomizedLinearFunction.apply
 
     input = (
-            torch.randn(20,20,dtype=torch.double,requires_grad=True),
-            torch.randn(30,20,dtype=torch.double,requires_grad=True),
-            None,
-            None,
-            )
+        torch.randn(20, 20, dtype=torch.double, requires_grad=True),
+        torch.randn(30, 20, dtype=torch.double, requires_grad=True),
+        None,
+        None,
+    )
     test = gradcheck(customlinear, input, eps=1e-6, atol=1e-4)
     print(test)
