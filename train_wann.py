@@ -211,8 +211,10 @@ class Train():
 def get_parser():
     parser = argparse.ArgumentParser(description='WANN training')
     parser.add_argument('--epochs', type=int, default=50)
+    parser.add_argument('--generations', type=int, default=100)
     parser.add_argument('--batch', type=int, default=24)
-    parser.add_argument('--name', type=str, required=False, default="default-experiment")
+    parser.add_argument('--name', type=str, required=False,
+                        default="default-experiment")
     parser.add_argument('--pweighedrank', type=float, default=0.5)
     parser.add_argument('--sharedweight', type=float, default=-2.0)
     parser.add_argument('--reap', type=float, default=0.5)
@@ -222,20 +224,24 @@ def get_parser():
 
 def parse_args(args_dict):
     num_epochs = args_dict['epochs']
+    generations = args_dict['generations']
     batch_size = args_dict['batch']
     experiment_name = args_dict['name']
-    hyper_params = {"p_weighed_rank": args_dict["pweighedrank"], "w": args_dict["sharedweight"], "%_reap": args_dict["reap"]}
+    hyper_params = {"p_weighed_rank": args_dict["pweighedrank"],
+                    "w": args_dict["sharedweight"], "%_reap": args_dict["reap"]}
     population_size = args_dict["populationsize"]
 
     for key in args_dict.keys():
         print('parsed {} for {}'.format(args_dict[key], key))
 
-    return num_epochs, batch_size, experiment_name, hyper_params, population_size
+    return num_epochs, batch_size, experiment_name, hyper_params, population_size, generations
+
 
 if __name__ == "__main__":
     parser = get_parser()
     args = parser.parse_args()
-    num_epochs, batch_size, experiment_name, hyper_params, population_size = parse_args(vars(args))
+    num_epochs, batch_size, experiment_name, hyper_params, population_size, generations = parse_args(
+        vars(args))
 
     wann_class = wann
 
@@ -244,28 +250,40 @@ if __name__ == "__main__":
 
     train_dataset = SketchDataSet("./data/", is_train=True)
 
-    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=4)
+    train_loader = DataLoader(
+        train_dataset, batch_size=batch_size, shuffle=True, num_workers=4)
     print('Loaded %d train images' % len(train_dataset))
     print(torch.cuda.is_available())
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
+    criterion = torch.nn.CrossEntropyLoss()
     trainer.populate()
-    for _ in range(2):
-        trainer._self_mutate()
+
+    with torch.no_grad():
+        for _ in range(generations):
+            for _, (images, target) in enumerate(train_loader):
+                images = images.reshape(batch_size, 784).to(device)
+                target = target.to(device)
+                trainer.iterate(images, target, criterion)
+                if trainer.gen > generations:
+                    break
+
+    wann.save_json(trainer.pop[0], f"best_wann_model")
 
     net = wannModel(trainer.pop[0]).cuda()
-    criterion = torch.nn.CrossEntropyLoss()
     optimizer = torch.optim.Adam(net.parameters(), .003)
-    total_loss = 0
-    for i, (images, target) in enumerate(train_loader):
-        images, target = images.to(device), target.to(device)
-        images = images.reshape(batch_size, 784).to(device)
-        target = target.to(device)
-        pred = net(images)
-        loss = criterion(pred, target)
-        total_loss += loss.item()
+    for epoch in range(num_epochs):
+        total_loss = 0
+        for i, (images, target) in enumerate(train_loader):
+            images, target = images.to(device), target.to(device)
+            images = images.reshape(batch_size, 784).to(device)
+            target = target.to(device)
+            pred = net(images)
+            loss = criterion(pred, target)
+            total_loss += loss.item()
 
-        optimizer.zero_grad()
-        loss.backward()
-        optimizer.step()
-        print(loss.item())
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()
+        print(f"{epoch}: {total_loss/(i+1)}")
+    torch.save(net.state_dict(), "latest_best_model.pth")
