@@ -6,7 +6,7 @@ import torch
 from torch import softmax
 import torch.nn as nn
 import torch.nn.functional as F
-
+from utils import get_tensor_mask
 from networkx.algorithms.dag import topological_sort
 from networkx.readwrite import json_graph
 
@@ -265,13 +265,6 @@ class wann:
             return w
 
 
-def get_tensor_mask(g, nodes, init_weight=1):
-
-    mask = nx.to_numpy_matrix(g, nodes)[:-1, -1]
-    mask = init_weight*(mask*mask.T)
-    return torch.from_numpy(mask).float()
-
-
 class wannModel(nn.Module):
     def __init__(self, wann,):
         super(wannModel, self).__init__()
@@ -284,7 +277,7 @@ class wannModel(nn.Module):
 
         for v in self.top_sort:
             nodes = [f"i{i}" for i in range(self.wann.input_dim)]
-            if v not in nodes:
+            if v not in nodes and "o" not in nodes:
                 nodes.append(v)
                 self.weights.append(CustomizedLinear(
                     get_tensor_mask(self.wann.g, nodes)))
