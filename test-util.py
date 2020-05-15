@@ -6,7 +6,7 @@ import argparse
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
-
+from wann import wann, wannModel
 # Import local files
 from resnetbasic import BasicRes
 from sketchdataset import SketchDataSet
@@ -14,11 +14,13 @@ from sketchdataset import SketchDataSet
 # Global variables
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
-def test(train_loader, test_loader, learning_rate, num_epochs, experiment_name, 
-            momentum, weight_decay, inc_learning, upper_lr, n_classes):
+
+def test(train_loader, test_loader, learning_rate, num_epochs, experiment_name,
+         momentum, weight_decay, inc_learning, upper_lr, n_classes):
     net = BasicRes(n_classes).to(device)
-    net.load_state_dict(torch.load('./' + experiment_name + '_best_detector.pth'))
-    
+    net.load_state_dict(torch.load(
+        './' + experiment_name + '_best_detector.pth'))
+
     # evaluate the network on the test data
     tot = 0
     correct = 0
@@ -31,20 +33,46 @@ def test(train_loader, test_loader, learning_rate, num_epochs, experiment_name,
             tot += target.size(0)
             correct += (pred_class == target).sum().item()
 
-    
     print('Accuracy: {}'.format(100 * correct/tot))
+
+
+def test_wann_net(test_loader, wann_path, model_path):
+    wann_path = wann_path.replace(".json", "")
+    wann_obj = wann.load_json(wann_path)
+
+    net = wannModel(wann_obj).to(device)
+    net.load_state_dict(torch.load(model_path))
+
+    # evaluate the network on the test data
+    tot = 0
+    correct = 0
+    with torch.no_grad():
+        net.eval()
+        for i, (images, target) in enumerate(test_loader):
+            target = target.to(device)
+            images = images.reshape(images.shape[0], 784).to(device)
+            pred = net(images)
+            _, pred_class = torch.max(pred, 1)
+            tot += target.size(0)
+            correct += (pred_class == target).sum().item()
+
+    print(f'Accuracy: {100 * correct/tot:.3}%')
+
 
 def get_parser():
     parser = argparse.ArgumentParser(description='Resnet training')
     parser.add_argument('--lr', type=float, default=0.001)
     parser.add_argument('--epochs', type=int, default=50)
     parser.add_argument('--batch', type=int, default=24)
-    parser.add_argument('--name', type=str, required=False, default="default-experiment")
+    parser.add_argument('--name', type=str, required=False,
+                        default="default-experiment")
     parser.add_argument('--momentum', type=float, required=False, default=0.9)
-    parser.add_argument('--weightdecay', type=float, required=False, default=5e-4)
+    parser.add_argument('--weightdecay', type=float,
+                        required=False, default=5e-4)
     parser.add_argument('--incrlr', action='store_true')
     parser.add_argument('--upperlr', type=float, required=False, default=0.01)
     return parser
+
 
 def parse_args(args_dict):
     learning_rate = args_dict['lr']
@@ -58,10 +86,9 @@ def parse_args(args_dict):
 
     for key in args_dict.keys():
         print('parsed {} for {}'.format(args_dict[key], key))
-    
+
     return learning_rate, num_epochs, batch_size, experiment_name, momentum, \
         weight_decay, inc_learning, upper_lr
-
 
 
 def main():
@@ -79,16 +106,17 @@ def main():
     # Load data and split 80-20 to training-testing
     train_dataset = SketchDataSet("./data/", is_train=True)
     test_dataset = SketchDataSet("./data/", is_train=False)
-    
-
-    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=4)
+    train_loader = DataLoader(
+        train_dataset, batch_size=batch_size, shuffle=True, num_workers=4)
     print('Loaded %d train images' % len(train_dataset))
-    
-    test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False, num_workers=4)
+
+    test_loader = DataLoader(
+        test_dataset, batch_size=batch_size, shuffle=False, num_workers=4)
     print('Loaded %d test images' % len(test_dataset))
 
-    test(train_loader, test_loader, learning_rate, num_epochs, experiment_name, 
-            momentum, weight_decay, inc_learning, upper_lr, train_dataset.num_of_classes())
+    test(train_loader, test_loader, learning_rate, num_epochs, experiment_name,
+         momentum, weight_decay, inc_learning, upper_lr, train_dataset.num_of_classes())
+
 
 if __name__ == '__main__':
     main()
