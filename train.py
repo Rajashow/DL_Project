@@ -1,4 +1,4 @@
-from ulti import get_pop_rank, functools_reduce_iconcat, should_speciate
+from utils import get_pop_rank, functools_reduce_iconcat, should_speciate
 from species import Species
 from wann import wann
 import numpy as np
@@ -145,7 +145,7 @@ class Train():
         self.sep = []
         self.sep.append(Species(self.pop))
 
-    def iterate(self, x, y, loss, init_mutate=100):
+    def iterate(self, x, y, loss, init_mutate=1_000_000):
         """Primary method used to interface with wanns
 
         Arguments:
@@ -157,7 +157,7 @@ class Train():
         if not self.pop:
             print("Creating new population")
             self.populate()
-            for _ in range(100):
+            for _ in range(init_mutate):
                 self._self_mutate()
             print("Done creating a population")
         else:

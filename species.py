@@ -1,9 +1,14 @@
-from ulti import get_pop_fitness, get_pop_rank, get_split, get_pop_loss
+from utils import get_pop_fitness, get_pop_rank, get_split, get_pop_loss
 import bisect
 
 
 class Species():
     def __init__(self, pops):
+        """Create a species with a given population
+
+        Arguments:
+            pops {list} -- list of population
+        """
         self.max_fit = 0
         self.mean_fit = 0
         self.species_list = [pop for pop in pops]
@@ -24,6 +29,12 @@ class Species():
             self.species_list)-numb_to_reap]
 
     def get_fitness(self):
+        """return the fitness of all species
+
+        Returns:
+
+            list -- list of fitness for all of species(type float)
+        """
         return [get_pop_fitness(s) for s in self.species_list]
 
     def speciate(self):
@@ -56,20 +67,3 @@ class Species():
             sep = new_Species
 
         return [self, new_Species]
-
-
-# if __name__ == "__main__":
-#     wann_class = wann
-
-#     hyper_params = {"p_weighed_rank": .5, "w": -2, "%_reap": .5}
-#     class_args = {"input_dim": (784), "num_classes": 300}
-#     trainer = Train(wann_class, class_args, 100, hyper_params)
-#     trainer.populate()
-#     for i in range(len(trainer.pop)):
-#         if i > 50:
-#             trainer.pop[i].fitness = 1/((i+1)+2)
-#         else:
-#             trainer.pop[i].fitness = 1/(i+1)
-#     sp = Species([])
-#     sp.species_list = trainer.pop
-#     sp.speciete()

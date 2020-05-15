@@ -1,7 +1,6 @@
-from wann import wannModel
+from wann import wannModel, wann
 from torch.utils.data import DataLoader
 from sketchdataset import SketchDataSet
-from wann import wann
 from train import Train
 import torch
 
@@ -25,7 +24,7 @@ trainer.populate()
 for _ in range(2):
     trainer._self_mutate()
 
-net = wannModel(trainer.pop[0])
+net = wannModel(trainer.pop[0]).cuda()
 criterion = torch.nn.CrossEntropyLoss()
 optimizer = torch.optim.Adam(net.parameters(), .003)
 total_loss = 0
@@ -41,5 +40,3 @@ for i, (images, target) in enumerate(train_loader):
     loss.backward()
     optimizer.step()
     print(loss.item())
-    if i == 2:
-        break
