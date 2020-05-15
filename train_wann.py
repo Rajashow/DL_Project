@@ -1,11 +1,15 @@
-from utils import get_pop_rank, functools_reduce_iconcat, should_speciate
-from species import Species
-from wann import wann
+import argparse
 import numpy as np
-from ranker import nsga_sort, rank_array
 import torch
 import matplotlib.pyplot as plt
+
+from ranker import nsga_sort, rank_array
 from scipy.ndimage.filters import gaussian_filter1d
+from sketchdataset import SketchDataSet
+from species import Species
+from torch.utils.data import DataLoader
+from utils import get_pop_rank, functools_reduce_iconcat, should_speciate
+from wann import wann, wannModel
 
 
 class Train():
@@ -204,19 +208,64 @@ class Train():
         plt.show()
 
 
+def get_parser():
+    parser = argparse.ArgumentParser(description='WANN training')
+    parser.add_argument('--epochs', type=int, default=50)
+    parser.add_argument('--batch', type=int, default=24)
+    parser.add_argument('--name', type=str, required=False, default="default-experiment")
+    parser.add_argument('--pweighedrank', type=float, default=0.5)
+    parser.add_argument('--sharedweight', type=float, default=-2.0)
+    parser.add_argument('--reap', type=float, default=0.5)
+    parser.add_argument('--populationsize', type=int, default=100)
+    return parser
+
+
+def parse_args(args_dict):
+    num_epochs = args_dict['epochs']
+    batch_size = args_dict['batch']
+    experiment_name = args_dict['name']
+    hyper_params = {"p_weighed_rank": args_dict["pweighedrank"], "w": args_dict["sharedweight"], "%_reap": args_dict["reap"]}
+    population_size = args_dict["populationsize"]
+
+    for key in args_dict.keys():
+        print('parsed {} for {}'.format(args_dict[key], key))
+
+    return num_epochs, batch_size, experiment_name, hyper_params, population_size
+
 if __name__ == "__main__":
+    parser = get_parser()
+    args = parser.parse_args()
+    num_epochs, batch_size, experiment_name, hyper_params, population_size = parse_args(vars(args))
+
     wann_class = wann
 
-    hyper_params = {"p_weighed_rank": .5, "w": -2, "%_reap": .5}
     class_args = {"input_dim": (784), "output_dim": 300}
-    trainer = Train(wann_class, class_args, 100, hyper_params)
+    trainer = Train(wann_class, class_args, population_size, hyper_params)
 
-    x = torch.rand((10, 784))
-    y = torch.randint(300, (10,))
-    loss = torch.nn.CrossEntropyLoss()
-    for i in range(50):
-        trainer.iterate(x, y, loss)
-        print(i)
+    train_dataset = SketchDataSet("./data/", is_train=True)
+
+    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=4)
+    print('Loaded %d train images' % len(train_dataset))
+    print(torch.cuda.is_available())
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+
     trainer.populate()
-    trainer.pop[0].visualize()
-    trainer.plot_fitness()
+    for _ in range(2):
+        trainer._self_mutate()
+
+    net = wannModel(trainer.pop[0]).cuda()
+    criterion = torch.nn.CrossEntropyLoss()
+    optimizer = torch.optim.Adam(net.parameters(), .003)
+    total_loss = 0
+    for i, (images, target) in enumerate(train_loader):
+        images, target = images.to(device), target.to(device)
+        images = images.reshape(batch_size, 784).to(device)
+        target = target.to(device)
+        pred = net(images)
+        loss = criterion(pred, target)
+        total_loss += loss.item()
+
+        optimizer.zero_grad()
+        loss.backward()
+        optimizer.step()
+        print(loss.item())

@@ -15,8 +15,7 @@ from sketchdataset import SketchDataSet
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 
-def test(train_loader, test_loader, learning_rate, num_epochs, experiment_name,
-         momentum, weight_decay, inc_learning, upper_lr, n_classes):
+def test(test_loader, experiment_name, n_classes):
     net = BasicRes(n_classes).to(device)
     net.load_state_dict(torch.load(
         './' + experiment_name + '_best_detector.pth'))
@@ -60,48 +59,28 @@ def test_wann_net(test_loader, wann_path, model_path):
 
 
 def get_parser():
-    parser = argparse.ArgumentParser(description='Resnet training')
-    parser.add_argument('--lr', type=float, default=0.001)
-    parser.add_argument('--epochs', type=int, default=50)
+    parser = argparse.ArgumentParser(description='Resnet testing')
     parser.add_argument('--batch', type=int, default=24)
     parser.add_argument('--name', type=str, required=False,
                         default="default-experiment")
-    parser.add_argument('--momentum', type=float, required=False, default=0.9)
-    parser.add_argument('--weightdecay', type=float,
-                        required=False, default=5e-4)
-    parser.add_argument('--incrlr', action='store_true')
-    parser.add_argument('--upperlr', type=float, required=False, default=0.01)
     return parser
 
 
 def parse_args(args_dict):
-    learning_rate = args_dict['lr']
-    num_epochs = args_dict['epochs']
     batch_size = args_dict['batch']
     experiment_name = args_dict['name']
-    momentum = args_dict['momentum']
-    weight_decay = args_dict['weightdecay']
-    inc_learning = args_dict['incrlr']
-    upper_lr = args_dict['upperlr']
 
     for key in args_dict.keys():
         print('parsed {} for {}'.format(args_dict[key], key))
 
-    return learning_rate, num_epochs, batch_size, experiment_name, momentum, \
-        weight_decay, inc_learning, upper_lr
+    return batch_size, experiment_name
 
 
 def main():
-    '''
-    Defualt main call:
-        `main.py --lr 0.001 --epochs 50 --batch 1 --name default-experiment \
-            --momentum 0.9 --weightdecay 5e-4 --incrlr False --upperlr 0.01`
-    '''
     # Parse arguments
     parser = get_parser()
     args = parser.parse_args()
-    learning_rate, num_epochs, batch_size, experiment_name, momentum, \
-        weight_decay, inc_learning, upper_lr = parse_args(vars(args))
+    batch_size, experiment_name = parse_args(vars(args))
 
     # Load data and split 80-20 to training-testing
     train_dataset = SketchDataSet("./data/", is_train=True)
@@ -114,8 +93,7 @@ def main():
         test_dataset, batch_size=batch_size, shuffle=False, num_workers=4)
     print('Loaded %d test images' % len(test_dataset))
 
-    test(train_loader, test_loader, learning_rate, num_epochs, experiment_name,
-         momentum, weight_decay, inc_learning, upper_lr, train_dataset.num_of_classes())
+    test(test_loader, experiment_name, test_dataset.num_of_classes())
 
 
 if __name__ == '__main__':
