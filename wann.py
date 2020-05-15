@@ -9,6 +9,8 @@ import torch.nn.functional as F
 from utils import get_tensor_mask
 from networkx.algorithms.dag import topological_sort
 from networkx.readwrite import json_graph
+from torch import softmax
+from CustomizedLinear import CustomizedLinear
 
 from CustomizedLinear import CustomizedLinear
 
@@ -161,8 +163,8 @@ class wann:
 
     def visualize(self, arg_kwargs=None):
         """
-      Creates diagram of WANN.
-      """
+        Creates diagram of WANN.
+        """
         arg_kwargs = arg_kwargs or {}
 
         # position map
@@ -239,8 +241,8 @@ class wann:
     @staticmethod
     def save_json(wann, filename):
         """
-      Saves WANN as a json file.
-      """
+        Saves WANN as a json file.
+        """
         with open(filename + ".json", "w") as wann_file:
             json.dump({
                 "input_dim": wann.input_dim,
@@ -253,15 +255,16 @@ class wann:
     @staticmethod
     def load_json(filename):
         """
-      Returns a WANN from a json file.
-      """
+        Returns a WANN from a json file.
+        """
         with open(filename + ".json", "r") as wann_file:
             data = json.load(wann_file)
             w = wann(data["input_dim"], data["output_dim"])
             w.hidden = data["hidden"]
             w.g = json_graph.node_link_graph(data["graph"])
-            w.activations = {v: wann.str_to_act(
-                s) for v, s in data["activations"].items()}
+            for v, s in data["activations"].items():
+              if v[0] != "i" and v[0] != "o":
+                w.activations[int(v)] = wann.str_to_act(s)
             return w
 
 
