@@ -6,7 +6,6 @@ import argparse
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
-from wann import wann, wannModel
 # Import local files
 from resnetbasic import BasicRes
 from sketchdataset import SketchDataSet
@@ -34,28 +33,6 @@ def test(test_loader, experiment_name, n_classes):
 
     print('Accuracy: {}'.format(100 * correct/tot))
 
-
-def test_wann_net(test_loader, wann_path, model_path):
-    wann_path = wann_path.replace(".json", "")
-    wann_obj = wann.load_json(wann_path)
-
-    net = wannModel(wann_obj).to(device)
-    net.load_state_dict(torch.load(model_path))
-
-    # evaluate the network on the test data
-    tot = 0
-    correct = 0
-    with torch.no_grad():
-        net.eval()
-        for i, (images, target) in enumerate(test_loader):
-            target = target.to(device)
-            images = images.reshape(images.shape[0], 784).to(device)
-            pred = net(images)
-            _, pred_class = torch.max(pred, 1)
-            tot += target.size(0)
-            correct += (pred_class == target).sum().item()
-
-    print(f'Accuracy: {100 * correct/tot:.3}%')
 
 
 def get_parser():
