@@ -1,6 +1,6 @@
 jenkspy==0.1.5
 matplotlib==3.2.1
 networkx==2.4
-numpy==1.18.4
+numpy==1.22.0
 torch==1.5.0+cu101
 unidip==0.1.1
